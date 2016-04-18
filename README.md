@@ -3,7 +3,8 @@
 
 ```julia
 
-import Fbls: Cx, BasicCol, RecCol, RecOf, Tbl, get, haskey, insert!, isempty, length, pushcol!, recid
+import Base: IOBuffer, seekstart
+import Fbls: Cx, BasicCol, RecCol, RecOf, Tbl, dump, get, haskey, insert!, isempty, length, load!, pushcol!, recid
 
 runExample1() = begin
     # All data ops require a context
@@ -35,6 +36,15 @@ runExample1() = begin
 
     # Records are really just Dicts mapping fields to values
     @assert frec[foobar] == brec
+
+    # Tables can be dumped to and loaded from any IO stream
+    buf = IOBuffer()
+    dump(foos, buf)
+    empty!(foos)
+    seekstart(buf)
+    load!(foos, buf, cx)
+    @assert length(foos) == 1
+    @assert haskey(foos, recid(frec), cx)
 end
 
 ```
@@ -43,7 +53,7 @@ end
 Fbls is an attempt at adding more degrees of freedom to the database paradigm, it's an itch I've been scratching for a while now. I'm all for standards as interfaces and theory as a starting point; but I'm drawing a line in the sand right here, the madness has to stop. All I ever really cared about was the ability to store, index and retrieve my data. I'm sick and tired of query languages, constraints and limitations; of being forced to bend ideas backwards around hairy solutions to someone else's problems, just to gain basic persistence.
 
 ## status
-Fbls is currently catching it's breath somewhere between crazy idea and working prototype. It represents my first major Julia project and I'm still feeling my way around the language. Basic testing is in place and the examples in this document should work as advertised.
+Fbls is currently catching it's breath somewhere between crazy idea and working prototype. It's my first major Julia project and I'm still feeling my way around the language. Basic testing is in place and the examples in this document should work as advertised.
 
 ## future
 Transactions, hash/ordered indexes and encryption; probably in that order.

@@ -231,8 +231,7 @@ dump(rx::Revix, out::IOBuf) = begin
     brx = BasicRevix(rx)
 
     for (id, val) in brx.recs
-        writeval(id, out)
-        write(out, ValSize(sizeofval(val)))
+        write(out, id.value)
         writeval(brx.col, val, out)
     end
 end
@@ -242,7 +241,8 @@ load!(rx::Revix, in::IOBuf, cx::Cx) = begin
 
     while !eof(in)
         id = readval(UUID, -1, in)
-        s = read(in, ValSize)
+
+        s = readsize(in)
 
         if s == -1
             delete!(brx.recs, id)
@@ -270,7 +270,7 @@ convert{ValT}(::Type{BasicRevix{ValT}}, rx::IORevix{ValT}) =
 delete!(rx::IORevix, rec::Rec, cx::Cx) = begin
     delete!(rx.wrapped, rec, cx)
     seekend(rx.buf)
-    writeval(recid(rec), rx.buf)
+    write(rx.buf, recid(rec).value)
     write(rx.buf, ValSize(-1)) 
     return rec
 end
@@ -278,12 +278,9 @@ end
 insert!(rx::IORevix, rec::Rec, cx::Cx) = begin
     insert!(rx.wrapped, rec, cx)
     seekend(rx.buf)
-    writeval(recid(rec), rx.buf)
+    write(rx.buf, recid(rec).value)
     col = BasicRevix(rx).col
-    v = rec[col]
-    s = ValSize(sizeofval(v))
-    write(rx.buf, s)
-    writeval(col, v, rx.buf)
+    writeval(col, rec[col], rx.buf)
     return rec
 end
 
@@ -470,6 +467,10 @@ typealias RecSize Int16
 typealias ColSize Int8
 typealias ValSize Int64
 
+readsize(in::IOBuf) = read(in, ValSize)
+
+writesize{ValT}(v::ValT, out::IOBuf) = write(out, ValSize(sizeof(v)))
+
 readstr{LenT}(::Type{LenT}, in::IOBuf) = begin
     pos = position(in)
     len = read(in, LenT)
@@ -501,7 +502,7 @@ readrec(tbl::Tbl, in::IOBuf, cx::Cx) = begin
     
     for i = 1:len
         n = readstr(ColSize, in)
-        s = read(in, ValSize)
+        s = readsize(in)
         c = findcol(tbl, symbol(n))
         
         if isnull(c)
@@ -522,26 +523,27 @@ writestr{LenT}(::Type{LenT}, val::Str, out::IOBuf) = begin
     write(out, bytestring(val))
 end
 
-writeval(val::DateTime, out::IOBuf) = write(out, datetime2unix(val))
+writeval(val::DateTime, out::IOBuf) = writeval(datetime2unix(val), out)
 
 writeval(val::Rec, out::IOBuf) = writeval(recid(val), out)
 
-writeval(val::Str, out::IOBuf) = write(out, bytestring(val))
+writeval(val::Str, out::IOBuf) = begin
+    writesize(val, out)
+    write(out, bytestring(val))
+end
 
-writeval(val::UUID, out::IOBuf) = write(out, val.value)
+writeval(val::UUID, out::IOBuf) = writeval(val.value, out)
 
-writeval(val, out::IOBuf) = write(out, val)
+writeval(val, out::IOBuf) = begin
+    writesize(val, out)
+    write(out, val)
+end
 
 writeval{ValT}(col::Col{ValT}, val::ValT, out::IOBuf) = writeval(val, out)
 
-sizeofval(val::DateTime) = sizeof(UInt128)
-sizeofval(val::Str) = sizeof(val)
-sizeofval(val::UUID) = sizeof(val.value)
-sizeofval(val::Rec) = sizeof(RecId)
-sizeofval(val) = sizeof(val)
-
 recsize(tbl::Tbl, rec::Rec) = 
     RecSize(count((c) -> !istemp(c) && haskey(rec, Fld(c)), cols(tbl)))
+
 
 writerec(tbl::Tbl, rec::Rec, out::IOBuf) = begin
     write(out, recsize(tbl, rec))
@@ -551,9 +553,7 @@ writerec(tbl::Tbl, rec::Rec, out::IOBuf) = begin
 
         if !istemp(c) && haskey(rec, f)
             writestr(ColSize, string(defname(c)), out)
-            v = rec[f]
-            write(out, ValSize(sizeofval(v)))
-            writeval(c, v, out)
+            writeval(c, rec[f], out)
         end
     end
 end

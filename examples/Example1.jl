@@ -2,7 +2,8 @@ module Examples
 
 push!(LOAD_PATH, "..")
 
-import Fbls: Cx, BasicCol, RecCol, RecOf, Tbl, get, haskey, insert!, isempty, length, pushcol!, recid
+import Base: IOBuffer, seekstart
+import Fbls: Cx, BasicCol, RecCol, RecOf, Tbl, dump, get, haskey, insert!, isempty, length, load!, pushcol!, recid
 
 runExample1() = begin
     # All data ops require a context
@@ -34,6 +35,15 @@ runExample1() = begin
 
     # Records are really just Dicts mapping fields to values
     @assert frec[foobar] == brec
+
+    # Tables can be dumped to and loaded from any IO stream
+    buf = IOBuffer()
+    dump(foos, buf)
+    empty!(foos)
+    seekstart(buf)
+    load!(foos, buf, cx)
+    @assert length(foos) == 1
+    @assert haskey(foos, recid(frec), cx)
 end
 
 end
