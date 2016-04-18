@@ -14,7 +14,7 @@ Transactions, hash/ordered indexes and encryption; most probably in that order.
 Columns, like pointers, don't do much by themselves besides referencing data that's stored elsewhere. In fbls, columns are statically typed, meaning they only reference values of a specified type. Julia types with canonical read/write implementations work out of the box, a type conversion facility is provided for anything else.
 
 ## records
-Records maps fields to values. Fields usually represent columns, but adding custom fields is just a constructor call away. Fields are immutable and globally unique. Two columns can share the same field by aliasing.
+Records maps fields to values. Fields usually represent columns, but adding custom fields is trivial. Fields are immutable and globally unique. Two columns can share the same field by aliasing.
 
 ## tables
 Tables map globally unique ids to records. Each table contains a set of columns that all records are projected onto. This means that even though a record can contain values from multiple tables, any specific table will only store values mapped to it's own set of columns. 
