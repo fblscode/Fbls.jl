@@ -1,10 +1,6 @@
 * change writeval imps to write size
 ** replaces sizeofval/write in writerec / dump
 
-* add examples/Example1.jl file
-** package Examples
-** import Fbls
-
 * remaining issues: 
 ** how to rename BasicCol to Col?
 ** how to best add seq support?

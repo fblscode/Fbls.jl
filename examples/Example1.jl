@@ -2,7 +2,7 @@ module Examples
 
 push!(LOAD_PATH, "..")
 
-import Fbls: Cx, BasicCol, RecCol, RecOf, Tbl, haskey, insert!, length, pushcol!, recid
+import Fbls: Cx, BasicCol, RecCol, RecOf, Tbl, get, haskey, insert!, isempty, length, pushcol!, recid
 
 runExample1() = begin
     # All data ops require a context
@@ -26,12 +26,13 @@ runExample1() = begin
     @assert !isempty(bars)
 
     # Records are initialized with globally unique ids on first insert
-    @assert haskey(bars, recid(brec), cx)
+    @assert get(bars, recid(brec), cx) == brec    
 
     frec = insert!(foos, RecOf(foo => "abc", foobar => brec), cx)
     @assert length(foos) == 1
+    @assert haskey(foos, recid(frec), cx)
 
-    # Records are implemented as regular Dicts
+    # Records are really just Dicts mapping fields to values
     @assert frec[foobar] == brec
 end
 
