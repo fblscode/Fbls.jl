@@ -33,6 +33,7 @@ typealias EvtQueues Dict{AnyEvt, EvtQueue}
 immutable BasicCx <: Cx
     evtsubs::EvtSubs
     evtqueues::EvtQueues
+
     BasicCx() = new(EvtSubs(), EvtQueues())
 end
 
@@ -155,6 +156,7 @@ recid(r::Rec) = r[idCol]
 ==(l::Rec, r::Rec) = begin
     lid = recid(l)
     rid = recid(r)
+
     return lid != Void && rid != Void && lid == rid
 end
 
@@ -264,7 +266,8 @@ IO{ValT}(rx::Revix{ValT}, buf::IOBuf) =
 
 convert(::Type{BasicRevix}, rx::IORevix) = BasicRevix(rx.wrapped)
 
-convert{ValT}(::Type{BasicRevix{ValT}}, rx::IORevix{ValT}) = BasicRevix{ValT}(rx.wrapped)
+convert{ValT}(::Type{BasicRevix{ValT}}, rx::IORevix{ValT}) = 
+    BasicRevix{ValT}(rx.wrapped)
 
 delete!(rx::IORevix, rec::Rec, cx::Cx) = begin
     delete!(rx.wrapped, rec, cx)
@@ -295,7 +298,7 @@ immutable BasicTbl <: Tbl
     name::Str
     cols::TblCols
     recs::TblRecs
-    instimeCol::Col{DateTime}
+    insertedatCol::Col{DateTime}
     revCol::Col{Int64}
     ondelete::Evt{Tuple{Rec}} 
     oninsert::Evt{Tuple{Rec}} 
@@ -312,7 +315,8 @@ immutable BasicTbl <: Tbl
                 Evt{Tuple{Rec}}(),
                 Evt{Tuple{Rec}}(),
                 Evt{Tuple{Rec, Rec}}())
-        pushcol!(t, idCol, t.instimeCol, t.revCol)
+        
+        pushcol!(t, idCol, t.insertedatCol, t.revCol)
         return t
     end
 end
@@ -336,9 +340,9 @@ end
 
 haskey(tbl::Tbl, id::RecId, cx::Cx) = haskey(BasicTbl(tbl).recs, id)
 
-instime(rec::Rec, tbl::Tbl) = rec[BasicTbl(tbl).instimeCol]
+insertedat(rec::Rec, tbl::Tbl) = rec[BasicTbl(tbl).insertedatCol]
 
-recrev(rec::Rec, tbl::Tbl) = rec[BasicTbl(tbl).revCol]
+revision(rec::Rec, tbl::Tbl) = rec[BasicTbl(tbl).revCol]
 
 delete!(tbl::Tbl, id::RecId, cx::Cx) = begin
     bt = BasicTbl(tbl)
@@ -371,10 +375,8 @@ end
 
 insert!(tbl::Tbl, rec::Rec, cx::Cx) = begin
     bt = BasicTbl(tbl)
-
     id = recid(rec)
-    rec[bt.instimeCol] = now()
-
+    rec[bt.insertedatCol] = now()
     pushevt!(bt.oninsert, (rec,), cx)
 
     prev = if id != Void && haskey(bt.recs, id) 
@@ -432,6 +434,7 @@ onuprec!(tbl::Tbl, sub::EvtSub, cx::Cx) =
 
 pushcol!(tbl::Tbl, cols::AnyCol...) = begin
     bt = BasicTbl(tbl)
+
     for c in cols bt.cols[defname(c)] = c end
 end
 
@@ -474,14 +477,14 @@ typealias ValSize Int64
 readstr{LenT}(::Type{LenT}, in::IOBuf) = begin
     pos = position(in)
     len = read(in, LenT)
+
     return utf8(read(in, UInt8, len))
 end
 
 readval{ValT}(::Type{ValT}, s::ValSize, in::IOBuf) = read(in, ValT) 
 
-readval(t::Type{DateTime}, s::ValSize, in::IOBuf) = begin
-    return unix2datetime(read(in, Float64))
-end
+readval(t::Type{DateTime}, s::ValSize, in::IOBuf) =
+    unix2datetime(read(in, Float64))
 
 readval(t::Type{Rec}, s::ValSize, in::IOBuf) = readval(RecId, s, in)
 
@@ -549,6 +552,7 @@ writerec(tbl::Tbl, rec::Rec, out::IOBuf) = begin
 
     for c in cols(tbl)
         f = Fld(c)
+
         if !istemp(c) && haskey(rec, f)
             n = defname(c)
             writestr(ColSize, n, out)
@@ -568,7 +572,9 @@ immutable IOTbl <: Tbl
     IOTbl(tbl::Tbl, buf::IOBuf, offsCol::Col{Offs}) = begin
         t = new(tbl, buf, offsCol, 
                 BasicCol{Offs}("$(defname(tbl))/prevoffs"))
+
         pushcol!(tbl, isdelCol, t.offsCol, t.prevoffsCol)
+
         return t
     end
 end
@@ -611,6 +617,7 @@ insert!(tbl::IOTbl, rec::Rec, cx::Cx) = begin
     rec[tbl.offsCol] = position(tbl.buf)
     res = insert!(tbl.wrapped, rec, cx)
     writerec(tbl, rec)
+
     return res
 end
 
@@ -641,16 +648,16 @@ testTblBasics() = begin
 
     rid = recid(r)
     @assert rid != Void
-    @assert recrev(r, t) == 1
-    rinstime = instime(r, t)
-    @assert rinstime != Void
+    @assert revision(r, t) == 1
+    rinsertedat = insertedat(r, t)
+    @assert rinsertedat != Void
 
     insert!(t, r, cx)
     @assert !isempty(t)
     @assert length(t) == 1
     @assert recid(r) == rid
-    @assert instime(r, t) >= rinstime
-    @assert recrev(r, t) == 2
+    @assert insertedat(r, t) >= rinsertedat
+    @assert revision(r, t) == 2
 end
 
 testGet() = begin
@@ -666,8 +673,8 @@ testIOTblBasics() = begin
     t = IO(Tbl("foos"), TempBuf())
     r = insert!(t, Rec(), cx)
     @assert recid(r) != Void
-    @assert recrev(r, t) == 1
-    @assert instime(r, t) != Void
+    @assert revision(r, t) == 1
+    @assert insertedat(r, t) != Void
     roffs = offs(r, t)
     @assert roffs > -1
     @assert prevoffs(r, t) == -1
