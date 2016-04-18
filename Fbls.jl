@@ -182,6 +182,8 @@ immutable BasicRevix{ValT} <: Revix{ValT}
                                            Evt{Tuple{Rec}}())
 end
 
+Revix{ValT}(n::Str, c::Col{ValT}) = BasicRevix{ValT}(n, c)
+
 defname(rx::Revix) = BasicRevix(rx).name
 
 empty!(rx::Revix) = empty!(BasicRevix(rx).recs)
@@ -832,7 +834,7 @@ testRevix() = begin
     cx = BasicCx()
     buf = TempBuf()
     tbl = IOTbl("foos", buf)
-    rx = BasicRevix{Offs}("offs", tbl.offsCol) 
+    rx = Revix("offs", tbl.offsCol) 
     pushdep!(tbl, rx, cx)
     rec = insrec!(tbl, Rec(), cx)
     id = recid(rec)
@@ -852,7 +854,7 @@ end
 testDumpLoadRevix() = begin
     cx = BasicCx()
     c = BasicCol{Str}("bar")
-    rx = BasicRevix{Str}("foo", c)
+    rx = Revix("foo", c)
     r = insrec!(rx, initrec!(RecOf(c => "abc")), cx)
     
     buf = TempBuf()
