@@ -125,11 +125,11 @@ immutable BasicCol{ValT} <: Col{ValT}
     BasicCol(name::Str) = new(name, Fld())
 end
 
-alias{ValT}(col::BasicCol{ValT}, n::Str) = BasicCol{ValT}(n, col.fld)
+alias{ValT}(col::Col{ValT}, n::Str) = BasicCol{ValT}(n, Fld(col))
 
 convert{ValT}(::Type{Fld}, col::BasicCol{ValT}) = col.fld
 
-defname{ValT}(col::BasicCol{ValT}) = col.name
+defname{ValT}(col::Col{ValT}) = BasicCol{ValT}(col).name
 
 immutable TempCol{ValT} <: Col{ValT}
     wrapped::Col{ValT}
