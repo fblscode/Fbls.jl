@@ -182,24 +182,28 @@ end
 
 defname(rx::Revix) = rx.name
 
-getval{ValT}(rx::Revix{ValT}, id::RecId, cx::Cx) = 
-    if haskey(rx.recs, id) Nullable{ValT}(rx.recs[id]) else Nullable{ValT}() end
+empty!(rx::Revix) = empty!(rx.recs)
+
+getval{ValT}(rx::Revix{ValT}, id::RecId, cx::Cx) = rx.recs[id]
 
 haskey(rx::Revix, id::RecId, cx::Cx) = haskey(rx.recs, id)
 
 delrec!(rx::Revix, rec::Rec, cx::Cx) = begin
     delete!(rx.recs, recid(rec))
     pushevt!(rx.ondelrec, (rec,), cx)
+    return rec
 end
 
 insrec!(rx::Revix, rec::Rec, cx::Cx) = begin
     rx.recs[recid(rec)] = rec[rx.col]
     pushevt!(rx.oninsrec, (rec,), cx)
+    return rec
 end
 
 loadrec!(rx::Revix, rec::Rec, cx::Cx) = begin
     rx.recs[recid(rec)] = rec[rx.col]
     pushevt!(rx.onloadrec, (rec,), cx)
+    return rec
 end
 
 ondelrec!(rx::Revix, sub::EvtSub, cx::Cx) = 
@@ -208,6 +212,26 @@ oninsrec!(rx::Revix, sub::EvtSub, cx::Cx) =
     evtsub!(rx.oninsrec, sub, cx) 
 onloadrec!(rx::Revix, sub::EvtSub, cx::Cx) = 
     evtsub!(rx.onloadrec, sub, cx)
+
+dumprecs(rx::Revix, out::IOBuf) = begin
+    for (id, val) in rx.recs
+        writeval(id, out)
+        write(out, ValSize(sizeofval(val)))
+        writeval(rx.col, val, out)
+    end
+end
+
+loadrecs!(rx::Revix, in::IOBuf, cx::Cx) = begin
+    while !eof(in)
+        id = readval(UUID, -1, in)
+        s = read(in, ValSize)
+        if s == -1
+            delete!(rx.recs, id)
+        else
+            rx.recs[id] = readval(rx.col, s, in, cx)
+        end
+    end
+end
 
 typealias TblCols Dict{Str, AnyCol}
 typealias TblRecs Dict{RecId, Rec} 
@@ -269,14 +293,7 @@ end
 
 delrec!(tbl::Tbl, rec::Rec, cx::Cx) = delrec!(tbl, recid(rec), cx)
 
-getrec(tbl::Tbl, id::RecId, cx::Cx) = begin
-    bt = BasicTbl(tbl)
-    return if haskey(bt.recs, id) 
-        Nullable{Rec}(bt.recs[id]) 
-    else 
-        Nullable{Rec}() 
-    end
-end
+getrec(tbl::Tbl, id::RecId, cx::Cx) = BasicTbl(tbl).recs[id]
 
 initrec!(rec) = begin
     if !haskey(rec, idCol)
@@ -389,15 +406,11 @@ convert(::Type{Fld}, col::RefCol) = col.fld
 
 defname(col::RefCol) = col.name
 
-getref(col::RefCol, rec::Rec, cx::Cx) = begin 
-    gr = getrec(col.tbl, rec[col], cx)
-    if isnull(gr) throw(RecNotFound()) end
-    return get(gr)
-end
+getref(col::RefCol, rec::Rec, cx::Cx) = getrec(col.tbl, rec[col], cx)
 
-typealias RecSize UInt16
-typealias ColSize UInt8
-typealias ValSize UInt64
+typealias RecSize Int16
+typealias ColSize Int8
+typealias ValSize Int64
 
 readstr{LenT}(::Type{LenT}, in::IOBuf) = begin
     pos = position(in)
@@ -408,7 +421,6 @@ end
 readval{ValT}(::Type{ValT}, s::ValSize, in::IOBuf) = read(in, ValT) 
 
 readval(t::Type{DateTime}, s::ValSize, in::IOBuf) = begin
-    #@assert s == sizeof(Float64)
     return unix2datetime(read(in, Float64))
 end
 
@@ -417,18 +429,14 @@ readval(t::Type{Rec}, s::ValSize, in::IOBuf) = readval(RecId, s, in)
 readval(t::Type{Str}, s::ValSize, in::IOBuf) = utf8(read(in, UInt8, s))
 
 readval(t::Type{UUID}, s::ValSize, in::IOBuf) = begin
-    #@assert s == sizeof(UInt128)
     return RecId(read(in, UInt128))
 end
 
 readval{ValT}(col::Col{ValT}, s::ValSize, in::IOBuf, cx::Cx) = 
     readval(ValT, s, in)
 
-readval(col::RecCol, s::ValSize, in::IOBuf, cx::Cx) = begin
-    gr = getrec(col.tbl, readval(Rec, s, in), cx)
-    if isnull(gr) throw(RecNotFound()) end
-    return get(gr)
-end
+readval(col::RecCol, s::ValSize, in::IOBuf, cx::Cx) = 
+    getrec(col.tbl, readval(Rec, s, in), cx)
 
 readrec(tbl::Tbl, in::IOBuf, cx::Cx) = begin
     len = read(in, RecSize)
@@ -529,14 +537,14 @@ delrec!(tbl::IOTbl, id::RecId, cx::Cx) = begin
 end
 
 getrec(tbl::IOTbl, idx::Revix{Offs}, id::RecId, cx::Cx) = begin
-    r = getrec(tbl.wrapped, id, cx)
-
-    if isnull(r) && haskey(idx, id, cx)
-        seek(tbl.buf, get(getval(idx, id, cx)))
-        r = loadrec!(tbl, readrec(tbl, tbl.buf, cx), cx)
+    if haskey(tbl.wrapped, id, cx)
+        return getrec(tbl.wrapped, id, cx)
+    elseif haskey(idx, id, cx)
+        seek(tbl.buf, getval(idx, id, cx))
+        return loadrec!(tbl, readrec(tbl, tbl.buf, cx), cx)
     end
 
-    return r
+    throw(RecNotFound())
 end
 
 insrec!(tbl::IOTbl, rec::Rec, cx::Cx) = begin
@@ -587,7 +595,7 @@ testGetrec() = begin
     t = BasicTbl("foos")
     r = insrec!(t, Rec(), cx)
     gr = getrec(t, recid(r), cx)
-    @assert !isnull(gr) && get(gr) == r
+    @assert gr == r
 end
 
 testIOTblBasics() = begin
@@ -709,7 +717,6 @@ testEmptyTbl() = begin
     r = insrec!(t, Rec(), cx)
     empty!(t)
     @assert !haskey(t, recid(r), cx)
-    @assert isnull(getrec(t, recid(r), cx))
 end
 
 testDumpLoadRecs() = begin
@@ -721,16 +728,16 @@ testDumpLoadRecs() = begin
     empty!(t)
     seekstart(buf)
     loadrecs!(t, buf, cx)
-    @assert get(getrec(t, recid(r), cx)) == r
+    @assert getrec(t, recid(r), cx) == r
 end
 
 testDelRec() = begin
     cx = BasicCx()
     t = BasicTbl("foos")
     r = insrec!(t, Rec(), cx)
-    delrec!(t, recid(r), cx)
-    gr = getrec(t, recid(r), cx)
-    @assert isnull(gr)
+    id = recid(r)
+    delrec!(t, id, cx)
+    @assert !haskey(t, id, cx)
 end
 
 testIODelRec() = begin
@@ -738,12 +745,12 @@ testIODelRec() = begin
     buf = TempBuf()
     t = IOTbl("foos", buf)
     r = insrec!(t, Rec(), cx)
-    delrec!(t, recid(r), cx)
+    id = recid(r)
+    delrec!(t, id, cx)
     empty!(t)
     seekstart(buf)
     loadrecs!(t, buf, cx)
-    gr = getrec(t, recid(r), cx)
-    @assert isnull(gr)
+    @assert !haskey(t, id, cx)
 end
 
 testIsdirty() = begin
@@ -791,7 +798,7 @@ testRevix() = begin
     id = recid(rec)
     @assert doevts!(cx) == 1
     @assert haskey(rx, id, cx)
-    @assert get(getval(rx, id, cx)) == offs(rec, tbl)
+    @assert getval(rx, id, cx) == offs(rec, tbl)
     
     empty!(tbl)
     @assert getrec(tbl, rx, id, cx) == rec
@@ -800,6 +807,20 @@ testRevix() = begin
     delrec!(tbl, rec, cx)
     doevts!(cx)
     @assert !haskey(rx, id, cx)
+end
+
+testDumpLoadRevix() = begin
+    cx = BasicCx()
+    c = BasicCol{Str}("bar")
+    rx = Revix{Str}("foo", c)
+    r = insrec!(rx, initrec!(RecOf(c => "abc")), cx)
+    
+    buf = TempBuf()
+    dumprecs(rx, buf)
+    empty!(rx)
+    seekstart(buf)
+    loadrecs!(rx, buf, cx)
+    @assert getval(rx, recid(r), cx) == "abc"
 end
 
 testAll() = begin
@@ -820,6 +841,7 @@ testAll() = begin
     testIsdirty()
     testOninsrec()
     testRevix()
+    testDumpLoadRevix()
 end
 
 end
