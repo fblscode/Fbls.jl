@@ -32,6 +32,7 @@ runExample1() = begin
     frec = insert!(foos, RecOf(foo => "abc", foobar => brec), cx)
     @assert length(foos) == 1
 
+    # Records are implemented as regular Dicts
     @assert frec[foobar] == brec
 end
 
