@@ -215,8 +215,9 @@ immutable BasicTbl <: Tbl
     instimeCol::Col{DateTime}
     revCol::Col{Int64}
     ondelrec::Evt{Tuple{Rec}} 
-    oninsrec::Evt{Tuple{Rec, Rec}} 
+    oninsrec::Evt{Tuple{Rec}} 
     onloadrec::Evt{Tuple{Rec}} 
+    onuprec::Evt{Tuple{Rec, Rec}} 
 
     BasicTbl(name::Str) = begin
         t = new(name, 
@@ -225,8 +226,9 @@ immutable BasicTbl <: Tbl
                 BasicCol{DateTime}("$name/ins-time"), 
                 BasicCol{Int64}("$name/rev"),
                 Evt{Tuple{Rec}}(),
-                Evt{Tuple{Rec, Rec}}(),
-                Evt{Tuple{Rec}}())
+                Evt{Tuple{Rec}}(),
+                Evt{Tuple{Rec}}(),
+                Evt{Tuple{Rec, Rec}}())
         pushcol!(t, idCol, t.instimeCol, t.revCol)
         return t
     end
@@ -295,16 +297,17 @@ insrec!(tbl::Tbl, rec::Rec, cx::Cx) = begin
     id = recid(rec)
     rec[bt.instimeCol] = now()
 
+    pushevt!(bt.oninsrec, (rec,), cx)
+
     prev = if id != Void && haskey(bt.recs, id) 
         rec[bt.revCol] += 1
+        pushevt!(bt.onuprec, (copy(bt.recs[id]), rec), cx)
         bt.recs[id]
     else 
         initrec!(bt, rec)
         id = recid(rec)
         bt.recs[id] = Rec() 
     end
-
-    pushevt!(bt.oninsrec, (copy(prev), rec), cx)
 
     for c in values(bt.cols)
         if haskey(rec, c)
@@ -352,9 +355,9 @@ pushcol!(tbl::Tbl, cols::AnyCol...) = begin
     for c in cols bt.cols[defname(c)] = c end
 end
 
-pushdep!(tbl::Tbl, dep::Revix, cx::Cx) = begin
+pushdep!(tbl::Tbl, dep, cx::Cx) = begin
     ondelrec!(tbl, (rec) -> delrec!(dep, rec, cx), cx)
-    oninsrec!(tbl, (prec, rec) -> insrec!(dep, rec, cx), cx)
+    oninsrec!(tbl, (rec) -> insrec!(dep, rec, cx), cx)
     onloadrec!(tbl, (rec) -> loadrec!(dep, rec, cx), cx)
 end
 
@@ -771,7 +774,7 @@ testOninsrec() = begin
     t = BasicTbl("foos")
     rec = Rec()
     wascalled = false
-    oninsrec!(t, (pr, r) -> (@assert r == rec; wascalled = true), cx)
+    oninsrec!(t, (r) -> (@assert r == rec; wascalled = true), cx)
     insrec!(t, rec, cx)
     @assert !wascalled
     @assert doevts!(cx) == 1

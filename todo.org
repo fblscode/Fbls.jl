@@ -1,8 +1,6 @@
 * add IORevix
 ** implement readrec/writerec/loadrecs
 
-* turn into package
-
 * post 
 ** how to best add seq support?
 ** any way to steal the tuple parametric vararg magic?
