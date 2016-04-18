@@ -26,4 +26,4 @@ A reverse index maps record ids to values for a specific column. Combining a rev
 Tables and indexes have load, insert and delete events that can be hooked into. All events are logged in the current context and pumped asynchronously by calling doevts!.
 
 ## wrap on, wrap off
-fbls uses wrapping extensively to allow arbitrary combinations of functionality. Any table can be wrapped by an IO table to add stream logging, any number of layers can be wrapped on top; and all the pieces are still accessible in their original state, the initial table reference still knows nothing about IO. Any column can be made temporary, the same column can even be temporary in one table and persistent in another.
+fbls uses wrapping extensively to enable arbitrary combinations of functionality. Any table can be wrapped by an IO table to add stream logging, any number of layers can be wrapped on top; and all the pieces are still accessible in their original state, the initial table reference still knows nothing about IO. Any column can be made temporary, the same column can even be temporary in one table and persistent in another.
