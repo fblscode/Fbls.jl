@@ -1,6 +1,6 @@
 module Fbls
 
-import Base: AbstractIOBuffer, ==, convert, delete!, done, empty!, eof, get, getindex, isempty, haskey, length, next, position, seekend, setindex!, start
+import Base: AbstractIOBuffer, ==, convert, delete!, done, empty!, eof, get, getindex, isempty, haskey, length, next, position, push!, seekend, setindex!, start
 import Base.Dates: DateTime, datetime2unix, now, unix2datetime
 import Base.Random: UUID, uuid4
 
@@ -17,76 +17,28 @@ TempBuf() = IOBuffer()
 
 abstract Cx
 
-abstract AnyEvt
+typealias EvtSub Function
+typealias EvtSubs Vec{EvtSub}
 
-immutable Evt{ArgsT} <: AnyEvt
+immutable Evt{ArgsT}
     id::UUID
+    subs::EvtSubs
 
-    Evt() = new(uuid4())
+    Evt() = new(uuid4(), EvtSubs())
 end
 
-typealias EvtSub Function
-typealias EvtSubs Dict{AnyEvt, Vec{EvtSub}}
-typealias EvtQueue Vec{Vec{Any}}
-typealias EvtQueues Dict{AnyEvt, EvtQueue}
+sub!(evt::Evt, sub::EvtSub) = push!(evt.subs, sub)
+
+unsub!(evt::Evt, sub::EvtSub) = delete!(evt.subs, sub)
+
+push!{ArgsT}(evt::Evt{ArgsT}, args::ArgsT) =
+    for sub in evt.subs sub(args...) end
 
 immutable BasicCx <: Cx
-    evtsubs::EvtSubs
-    evtqueues::EvtQueues
-
-    BasicCx() = new(EvtSubs(), EvtQueues())
+    BasicCx() = new()
 end
 
 Cx() = BasicCx()
-
-sub!(evt::AnyEvt, sub::EvtSub, cx::Cx) = begin
-    bcx = BasicCx(cx)
-
-    subs = if haskey(bcx.evtsubs, evt)
-        bcx.evtsubs[evt]
-    else
-        bcx.evtsubs[evt] = Vec{EvtSub}()
-    end
-
-    push!(subs, sub)
-end
-
-unsub!(evt::AnyEvt, sub::EvtSub, cx::Cx) = 
-    delete!(BasicCx(cx).subs[evt], sub)
-
-pushevt!{ArgsT}(evt::Evt{ArgsT}, args::ArgsT, cx::Cx) = begin
-    bcx = BasicCx(cx)
-    
-    if haskey(bcx.evtsubs, evt) && !isempty(bcx.evtsubs[evt])
-        q = if haskey(bcx.evtqueues, evt)
-            bcx.evtqueues[evt]
-        else
-            bcx.evtqueues[evt] = EvtQueue()
-        end
-        
-        push!(q, [Any(a) for a=args])
-    end
-end
-
-doevts!(cx::Cx) = begin
-    bcx = BasicCx(cx)
-    res = 0
-
-    for (evt, q) in bcx.evtqueues
-        if !isempty(q)
-            subs = bcx.evtsubs[evt]
-
-            for args in q, sub in subs
-                sub(args...)
-                res += 1
-            end
-
-            empty!(q)
-        end
-    end
-
-    return res
-end
 
 abstract AnyCol
 
@@ -158,6 +110,12 @@ recid(r::Rec) = r[idCol]
     return lid != Void && rid != Void && lid == rid
 end
 
+pushdep!(def, dep) = begin
+    sub!(ondelete(def), (id, cx) -> delete!(dep, id, cx))
+    sub!(onload(def), (rec, cx) -> load!(dep, rec, cx))
+    sub!(onupsert(def), (rec, cx) -> upsert!(dep, rec, cx))
+end
+
 abstract Revix{ValT}
 
 typealias RevixRecs{ValT} Dict{RecId, ValT}
@@ -166,15 +124,15 @@ immutable BasicRevix{ValT} <: Revix{ValT}
     name::Symbol
     col::Col{ValT}
     recs::RevixRecs{ValT}
-    ondelete::Evt{Tuple{Rec}} 
-    onload::Evt{Tuple{Rec}} 
-    onupsert::Evt{Tuple{Rec}} 
+    ondelete::Evt{Tuple{RecId, Cx}} 
+    onload::Evt{Tuple{Rec, Cx}} 
+    onupsert::Evt{Tuple{Rec, Cx}} 
 
     BasicRevix(n::Symbol, c::Col{ValT}) = new(n, c, 
                                               RevixRecs{ValT}(), 
-                                              Evt{Tuple{Rec}}(),
-                                              Evt{Tuple{Rec}}(),
-                                              Evt{Tuple{Rec}}())
+                                              Evt{Tuple{RecId, Cx}}(),
+                                              Evt{Tuple{Rec, Cx}}(),
+                                              Evt{Tuple{Rec, Cx}}())
 end
 
 Revix{ValT}(n::Symbol, c::Col{ValT}) = BasicRevix{ValT}(n, c)
@@ -187,33 +145,30 @@ get{ValT}(rx::Revix{ValT}, id::RecId, cx::Cx) = BasicRevix{ValT}(rx).recs[id]
 
 haskey(rx::Revix, id::RecId, cx::Cx) = haskey(BasicRevix(rx).recs, id)
 
-delete!(rx::Revix, rec::Rec, cx::Cx) = begin
+delete!(rx::Revix, id::RecId, cx::Cx) = begin
     brx = BasicRevix(rx)
-    delete!(brx.recs, recid(rec))
-    pushevt!(brx.ondelete, (rec,), cx)
-    return rec
+    if !haskey(rx, id, cx) throw(RecNotFound()) end
+    push!(brx.ondelete, (id, cx))
+    delete!(brx.recs, id)
 end
 
 upsert!(rx::Revix, rec::Rec, cx::Cx) = begin
     brx = BasicRevix(rx)
+    push!(brx.onupsert, (rec, cx))
     brx.recs[recid(rec)] = rec[brx.col]
-    pushevt!(brx.onupsert, (rec,), cx)
     return rec
 end
 
 load!(rx::Revix, rec::Rec, cx::Cx) = begin
     brx = BasicRevix(rx)
+    push!(brx.onload, (rec, cx))
     brx.recs[recid(rec)] = rec[brx.col]
-    pushevt!(brx.onload, (rec,), cx)
     return rec
 end
 
-ondelete!(rx::Revix, sub::EvtSub, cx::Cx) = 
-    sub!(BasicRevix(rx).ondelete, sub, cx)
-onupsert!(rx::Revix, sub::EvtSub, cx::Cx) = 
-    sub!(BasicRevix(rx).onupsert, sub, cx) 
-onload!(rx::Revix, sub::EvtSub, cx::Cx) = 
-    sub!(BasicRevix(rx).onload, sub, cx)
+ondelete(rx::Revix) = BasicRevix(rx).ondelete
+onupsert(rx::Revix) = BasicRevix(rx).onupsert 
+onload(rx::Revix) = BasicRevix(rx).onload
 
 done(rx::Revix, i) = done(BasicRevix(rx).recs, i)
 isempty(rx::Revix) = isempty(BasicRevix(rx).recs)
@@ -261,12 +216,11 @@ convert(::Type{BasicRevix}, rx::IORevix) = BasicRevix(rx.wrapped)
 convert{ValT}(::Type{BasicRevix{ValT}}, rx::IORevix{ValT}) = 
     BasicRevix{ValT}(rx.wrapped)
 
-delete!(rx::IORevix, rec::Rec, cx::Cx) = begin
-    delete!(rx.wrapped, rec, cx)
+delete!(rx::IORevix, id::RecId, cx::Cx) = begin
+    delete!(rx.wrapped, id, cx)
     seekend(rx.buf)
-    write(rx.buf, recid(rec).value)
+    write(rx.buf, id.value)
     write(rx.buf, ValSize(-1)) 
-    return rec
 end
 
 upsert!(rx::IORevix, rec::Rec, cx::Cx) = begin
@@ -283,21 +237,15 @@ typealias TblRecs Dict{RecId, Rec}
 
 abstract Tbl
 
-pushdep!(tbl::Tbl, dep, cx::Cx) = begin
-    ondelete!(tbl, (rec) -> delete!(dep, rec, cx), cx)
-    onload!(tbl, (rec) -> load!(dep, rec, cx), cx)
-    onupsert!(tbl, (_, rec) -> upsert!(dep, rec, cx), cx)
-end
-
 immutable BasicTbl <: Tbl
     name::Symbol
     cols::TblCols
     recs::TblRecs
     upsertedatCol::Col{DateTime}
     revCol::Col{Int64}
-    ondelete::Evt{Tuple{Rec}} 
-    onload::Evt{Tuple{Rec}} 
-    onupsert::Evt{Tuple{Rec, Rec}} 
+    ondelete::Evt{Tuple{RecId, Cx}} 
+    onload::Evt{Tuple{Rec, Cx}} 
+    onupsert::Evt{Tuple{Rec, Cx}} 
 
     BasicTbl(n::Symbol) = begin
         t = new(n, 
@@ -305,9 +253,9 @@ immutable BasicTbl <: Tbl
                 TblRecs(), 
                 BasicCol{DateTime}(symbol("($n)_upsertedat")), 
                 BasicCol{Int64}(symbol("$(n)_revision")),
-                Evt{Tuple{Rec}}(),
-                Evt{Tuple{Rec}}(),
-                Evt{Tuple{Rec, Rec}}())
+                Evt{Tuple{RecId, Cx}}(),
+                Evt{Tuple{Rec, Cx}}(),
+                Evt{Tuple{Rec, Cx}}())
         
         pushcol!(t, idCol, t.upsertedatCol, t.revCol)
         return t
@@ -339,11 +287,10 @@ revision(rec::Rec, tbl::Tbl) = rec[BasicTbl(tbl).revCol]
 
 delete!(tbl::Tbl, id::RecId, cx::Cx) = begin
     bt = BasicTbl(tbl)
-    pushevt!(bt.ondelete, (bt.recs[id],), cx)
-    delete!(bt.recs, id) 
+    if !haskey(tbl, id, cx) throw(RecNotFound()) end
+    push!(bt.ondelete, (id, cx))
+    delete!(bt.recs, id)
 end
-
-delete!(tbl::Tbl, rec::Rec, cx::Cx) = delete!(tbl, recid(rec), cx)
 
 get(tbl::Tbl, id::RecId, cx::Cx) = BasicTbl(tbl).recs[id]
 
@@ -373,14 +320,14 @@ upsert!(tbl::Tbl, rec::Rec, cx::Cx) = begin
 
     prev = if id != Void && haskey(bt.recs, id) 
         rec[bt.revCol] += 1
+        push!(bt.onupsert, (rec, cx))
         bt.recs[id]
     else 
         initrec!(bt, rec)
         id = recid(rec)
+        push!(bt.onupsert, (rec, cx))
         bt.recs[id] = Rec() 
     end
-
-    pushevt!(bt.onupsert, (copy(prev), rec), cx)
 
     for c in values(bt.cols)
         if haskey(rec, c)
@@ -406,26 +353,22 @@ load!(tbl::Tbl, rec::Rec, cx::Cx) = begin
 
     if haskey(rec, isdelCol)
         id = recid(rec)
-        pushevt!(bt.ondelete, (bt.recs[id],), cx)
+        push!(bt.ondelete, (id, cx))
         delete!(bt.recs, id)
     else
+        push!(bt.onload, (rec, cx))
         bt.recs[recid(rec)] = rec
-        pushevt!(bt.onload, (rec,), cx)
     end
 
     return rec
 end
 
-ondelete!(tbl::Tbl, sub::EvtSub, cx::Cx) = 
-    sub!(BasicTbl(tbl).ondelete, sub, cx) 
-onupsert!(tbl::Tbl, sub::EvtSub, cx::Cx) = 
-    sub!(BasicTbl(tbl).onupsert, sub, cx) 
-onload!(tbl::Tbl, sub::EvtSub, cx::Cx) = 
-    sub!(BasicTbl(tbl).onload, sub, cx)
+ondelete(tbl::Tbl) = BasicTbl(tbl).ondelete 
+onupsert(tbl::Tbl) = BasicTbl(tbl).onupsert 
+onload(tbl::Tbl) = BasicTbl(tbl).onload
 
 pushcol!(tbl::Tbl, cols::AnyCol...) = begin
     bt = BasicTbl(tbl)
-
     for c in cols bt.cols[defname(c)] = c end
 end
 
@@ -850,11 +793,8 @@ testOnupsert() = begin
     t = Tbl(:foos)
     rec = Rec()
     wascalled = false
-    onupsert!(t, (pr, r) -> (@assert r == rec; wascalled = true), cx)
+    sub!(onupsert(t), (r, cx) -> (@assert r == rec; wascalled = true))
     upsert!(t, rec, cx)
-
-    @assert !wascalled
-    @assert doevts!(cx) == 1
     @assert wascalled
 end
 
@@ -866,10 +806,9 @@ testRevix() = begin
     @assert isempty(rx)
     @assert length(rx) == 0
 
-    pushdep!(tbl, rx, cx)
+    pushdep!(tbl, rx)
     rec = upsert!(tbl, Rec(), cx)
     id = recid(rec)
-    @assert doevts!(cx) == 1
     @assert haskey(rx, id, cx)
     @assert !isempty(rx)
     @assert length(rx) == 1
@@ -878,9 +817,7 @@ testRevix() = begin
     empty!(tbl)
     @assert get(tbl, rx, id, cx) == rec
 
-    doevts!(cx)
-    delete!(tbl, rec, cx)
-    doevts!(cx)
+    delete!(tbl, id, cx)
     @assert isempty(rx)
     @assert length(rx) == 0
     @assert !haskey(rx, id, cx)
@@ -914,7 +851,7 @@ testIORevix() = begin
     load!(rx, buf, cx)    
     @assert get(rx, id, cx) == "abc"
 
-    delete!(rx, rec, cx)
+    delete!(rx, id, cx)
     seekstart(buf)
     load!(rx, buf, cx)
     @assert !haskey(rx, id, cx)
