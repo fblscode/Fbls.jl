@@ -157,6 +157,12 @@ recid(r::Rec) = r[idCol]
     return lid != Void && rid != Void && lid == rid
 end
 
+pushdep!(def, dep, cx::Cx) = begin
+    ondelrec!(def, (rec) -> delrec!(dep, rec, cx), cx)
+    oninsrec!(def, (rec) -> insrec!(dep, rec, cx), cx)
+    onloadrec!(def, (rec) -> loadrec!(dep, rec, cx), cx)
+end
+
 typealias RevixRecs{ValT} Dict{RecId, ValT}
 
 immutable Revix{ValT}
@@ -357,12 +363,6 @@ pushcol!(tbl::Tbl, cols::AnyCol...) = begin
     for c in cols bt.cols[defname(c)] = c end
 end
 
-pushdep!(tbl::Tbl, dep, cx::Cx) = begin
-    ondelrec!(tbl, (rec) -> delrec!(dep, rec, cx), cx)
-    oninsrec!(tbl, (rec) -> insrec!(dep, rec, cx), cx)
-    onloadrec!(tbl, (rec) -> loadrec!(dep, rec, cx), cx)
-end
-
 recs(tbl::Tbl) = values(BasicTbl(tbl).recs)
 
 immutable RecCol <: Col{Rec}
@@ -493,8 +493,6 @@ writerec(tbl::Tbl, rec::Rec, out::IOBuf) = begin
     end
 end
 
-typealias IOIdx Revix{Offs}
-
 immutable IOTbl <: Tbl
     wrapped::Tbl
     name::Str
@@ -530,7 +528,7 @@ delrec!(tbl::IOTbl, id::RecId, cx::Cx) = begin
     writerec(tbl, RecOf(idCol => id, isdelCol => true))
 end
 
-getrec(tbl::IOTbl, idx::IOIdx, id::RecId, cx::Cx) = begin
+getrec(tbl::IOTbl, idx::Revix{Offs}, id::RecId, cx::Cx) = begin
     r = getrec(tbl.wrapped, id, cx)
 
     if isnull(r) && haskey(idx, id, cx)
