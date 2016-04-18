@@ -25,7 +25,7 @@ runExample1() = begin
     brec = insert!(bars, RecOf(bar => 42), cx)
     @assert !isempty(bars)
 
-    # Records are initialized with globally unique id on first insert
+    # Records are initialized with globally unique ids on first insert
     @assert haskey(bars, recid(brec), cx)
 
     frec = insert!(foos, RecOf(foo => "abc", foobar => brec), cx)
