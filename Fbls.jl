@@ -117,14 +117,14 @@ getindex{ValT}(r::Rec, c::Col{ValT}) = if haskey(r, c) getindex(r, Fld(c)) else 
 setindex!{ValT}(r::Rec, v::ValT, c::Col{ValT}) = setindex!(r, v, Fld(c))
 
 immutable BasicCol{ValT} <: Col{ValT}
-    name::Str
+    name::Symbol
     fld::Fld
 
-    BasicCol(n::Str, f::Fld) = new(n, f)
-    BasicCol(n::Str) = new(n, Fld())
+    BasicCol(n::Symbol, f::Fld) = new(n, f)
+    BasicCol(n::Symbol) = new(n, Fld())
 end
 
-alias{ValT}(col::Col{ValT}, n::Str) = BasicCol{ValT}(n, Fld(col))
+alias{ValT}(col::Col{ValT}, n::Symbol) = BasicCol{ValT}(n, Fld(col))
 
 convert{ValT}(::Type{Fld}, col::BasicCol{ValT}) = col.fld
 
@@ -148,8 +148,8 @@ istemp{ValT}(::TempCol{ValT}) = true
 
 RecId() = uuid4()
 
-idCol = BasicCol{RecId}("fbls/id")
-isdelCol = BasicCol{Bool}("fbls/isdel")
+idCol = BasicCol{RecId}(:fbls_id)
+isdelCol = BasicCol{Bool}(:fbls_isdel)
 
 recid(r::Rec) = r[idCol]
 
@@ -171,21 +171,21 @@ abstract Revix{ValT}
 typealias RevixRecs{ValT} Dict{RecId, ValT}
 
 immutable BasicRevix{ValT} <: Revix{ValT}
-    name::Str
+    name::Symbol
     col::Col{ValT}
     recs::RevixRecs{ValT}
     ondelete::Evt{Tuple{Rec}} 
     oninsert::Evt{Tuple{Rec}} 
     onload::Evt{Tuple{Rec}} 
 
-    BasicRevix(n::Str, c::Col{ValT}) = new(n, c, 
-                                           RevixRecs{ValT}(), 
-                                           Evt{Tuple{Rec}}(),
-                                           Evt{Tuple{Rec}}(),
-                                           Evt{Tuple{Rec}}())
+    BasicRevix(n::Symbol, c::Col{ValT}) = new(n, c, 
+                                              RevixRecs{ValT}(), 
+                                              Evt{Tuple{Rec}}(),
+                                              Evt{Tuple{Rec}}(),
+                                              Evt{Tuple{Rec}}())
 end
 
-Revix{ValT}(n::Str, c::Col{ValT}) = BasicRevix{ValT}(n, c)
+Revix{ValT}(n::Symbol, c::Col{ValT}) = BasicRevix{ValT}(n, c)
 
 defname(rx::Revix) = BasicRevix(rx).name
 
@@ -289,13 +289,13 @@ insert!(rx::IORevix, rec::Rec, cx::Cx) = begin
     return rec
 end
 
-typealias TblCols Dict{Str, AnyCol}
+typealias TblCols Dict{Symbol, AnyCol}
 typealias TblRecs Dict{RecId, Rec} 
 
 abstract Tbl
 
 immutable BasicTbl <: Tbl
-    name::Str
+    name::Symbol
     cols::TblCols
     recs::TblRecs
     insertedatCol::Col{DateTime}
@@ -305,12 +305,12 @@ immutable BasicTbl <: Tbl
     onload::Evt{Tuple{Rec}} 
     onuprec::Evt{Tuple{Rec, Rec}} 
 
-    BasicTbl(n::Str) = begin
+    BasicTbl(n::Symbol) = begin
         t = new(n, 
                 TblCols(),
                 TblRecs(), 
-                BasicCol{DateTime}("$n/ins-time"), 
-                BasicCol{Int64}("$n/rev"),
+                BasicCol{DateTime}(symbol("($n)_insertedat")), 
+                BasicCol{Int64}(symbol("$(n)_revision")),
                 Evt{Tuple{Rec}}(),
                 Evt{Tuple{Rec}}(),
                 Evt{Tuple{Rec}}(),
@@ -321,18 +321,18 @@ immutable BasicTbl <: Tbl
     end
 end
 
-Tbl(n::Str) = BasicTbl(n)
+Tbl(n::Symbol) = BasicTbl(n)
 
-cols(tbl::BasicTbl) = values(tbl.cols)
+cols(tbl::Tbl) = values(BasicTbl(tbl).cols)
 
-defname(tbl::BasicTbl) = tbl.name
+defname(tbl::Tbl) = BasicTbl(tbl).name
 
 empty!(tbl::Tbl) = empty!(BasicTbl(tbl).recs)
 
-findcol(tbl::Tbl, name::Str) = begin
+findcol(tbl::Tbl, n::Symbol) = begin
     bt = BasicTbl(tbl)
-    return if haskey(bt.cols, name) 
-        Nullable{AnyCol}(bt.cols[name]) 
+    return if haskey(bt.cols, n) 
+        Nullable{AnyCol}(bt.cols[n]) 
     else 
         Nullable{AnyCol}() 
     end
@@ -445,11 +445,11 @@ next(tbl::Tbl, i) = next(values(BasicTbl(tbl).recs), i)
 start(tbl::Tbl) = start(values(BasicTbl(tbl).recs))
 
 immutable RecCol <: Col{Rec}
-    name::Str
+    name::Symbol
     fld::Fld
     tbl::Tbl
 
-    RecCol(name::Str, tbl::Tbl) = new(name, Fld(), tbl)
+    RecCol(n::Symbol, tbl::Tbl) = new(n, Fld(), tbl)
 end
 
 convert(::Type{Fld}, col::RecCol) = col.fld
@@ -457,11 +457,11 @@ convert(::Type{Fld}, col::RecCol) = col.fld
 defname(col::RecCol) = col.name
 
 immutable RefCol <: Col{RecId}
-    name::Str
+    name::Symbol
     fld::Fld
     tbl::Tbl
 
-    RefCol(name::Str, tbl::Tbl) = new(name, Fld(), tbl)
+    RefCol(n::Symbol, tbl::Tbl) = new(n, Fld(), tbl)
 end
 
 convert(::Type{Fld}, col::RefCol) = col.fld
@@ -506,7 +506,7 @@ readrec(tbl::Tbl, in::IOBuf, cx::Cx) = begin
     for i = 1:len
         n = readstr(ColSize, in)
         s = read(in, ValSize)
-        c = findcol(tbl, n)
+        c = findcol(tbl, symbol(n))
         
         if isnull(c)
             skip(in, s)
@@ -554,8 +554,7 @@ writerec(tbl::Tbl, rec::Rec, out::IOBuf) = begin
         f = Fld(c)
 
         if !istemp(c) && haskey(rec, f)
-            n = defname(c)
-            writestr(ColSize, n, out)
+            writestr(ColSize, string(defname(c)), out)
             v = rec[f]
             write(out, ValSize(sizeofval(v)))
             writeval(c, v, out)
@@ -571,7 +570,7 @@ immutable IOTbl <: Tbl
     
     IOTbl(tbl::Tbl, buf::IOBuf, offsCol::Col{Offs}) = begin
         t = new(tbl, buf, offsCol, 
-                BasicCol{Offs}("$(defname(tbl))/prevoffs"))
+                BasicCol{Offs}(symbol("$(defname(tbl))_prevoffs")))
 
         pushcol!(tbl, isdelCol, t.offsCol, t.prevoffsCol)
 
@@ -579,7 +578,8 @@ immutable IOTbl <: Tbl
     end
 end
 
-IO(tbl::Tbl, buf::IOBuf; offsCol = BasicCol{Offs}("$(defname(tbl))/offs")) = 
+IO(tbl::Tbl, buf::IOBuf; 
+   offsCol = BasicCol{Offs}(symbol("$(defname(tbl))_offs"))) = 
     IOTbl(tbl, buf, offsCol)
 
 cols(tbl::IOTbl) = cols(tbl.wrapped)
@@ -638,7 +638,7 @@ end
 
 testTblBasics() = begin
     cx = Cx()
-    t = Tbl("foos")
+    t = Tbl(:foos)
     @assert isempty(t)
     @assert length(t) == 0
 
@@ -662,7 +662,7 @@ end
 
 testGet() = begin
     cx = Cx()
-    t = Tbl("foos")
+    t = Tbl(:foos)
     r = insert!(t, Rec(), cx)
     gr = get(t, recid(r), cx)
     @assert gr == r
@@ -670,7 +670,7 @@ end
 
 testIOTblBasics() = begin
     cx = Cx()
-    t = IO(Tbl("foos"), TempBuf())
+    t = IO(Tbl(:foos), TempBuf())
     r = insert!(t, Rec(), cx)
     @assert recid(r) != Void
     @assert revision(r, t) == 1
@@ -686,7 +686,7 @@ end
 
 testRecBasics() = begin
     r = Rec()
-    c = BasicCol{Str}("foo")
+    c = BasicCol{Str}(:foo)
     @assert r[c] == Void
     r[c] = "abc"
     r[c] = "def"
@@ -698,8 +698,8 @@ end
 
 testTempCol() = begin
     cx = Cx()
-    t = Tbl("foo")
-    c = BasicCol{Str}("bar")
+    t = Tbl(:foo)
+    c = BasicCol{Str}(:bar)
     tc = Temp(c)
     pushcol!(t, tc)
 
@@ -716,8 +716,8 @@ end
 
 testRecCol() = begin
     cx = Cx()
-    t = Tbl("foos")
-    c = RecCol("foo", t)
+    t = Tbl(:foos)
+    c = RecCol(:foo, t)
     foo = insert!(t, Rec(), cx)
     
     r = Rec()
@@ -728,8 +728,8 @@ end
 
 testRefCol() = begin
     cx = Cx()
-    t = Tbl("foos")
-    c = RefCol("foo", t)
+    t = Tbl(:foos)
+    c = RefCol(:foo, t)
     foo = insert!(t, Rec(), cx)
     
     r = Rec()
@@ -740,8 +740,8 @@ end
 
 testReadWriteRec() = begin
     cx = Cx()
-    t = Tbl("foos")
-    c = BasicCol{Str}("bar")
+    t = Tbl(:foos)
+    c = BasicCol{Str}(:bar)
     pushcol!(t, c)
     r = Rec()
     r[c] = "abc"
@@ -756,9 +756,9 @@ end
 
 testReadWriteRecCol() = begin
     cx = Cx()
-    foos = Tbl("foos")
-    bars = Tbl("bars")
-    barFoo = RecCol("foo", foos)
+    foos = Tbl(:foos)
+    bars = Tbl(:bars)
+    barFoo = RecCol(:foo, foos)
     pushcol!(bars, barFoo)
     foo = insert!(foos, Rec(), cx)
     
@@ -773,8 +773,8 @@ testReadWriteRecCol() = begin
 end
 
 testAliasCol() = begin
-    foo = BasicCol{Str}("foo")
-    bar = alias(foo, "bar")
+    foo = BasicCol{Str}(:foo)
+    bar = alias(foo, :bar)
     
     r = Rec()
     r[foo] = "abc"
@@ -783,7 +783,7 @@ end
 
 testEmptyTbl() = begin
     cx = Cx()
-    t = Tbl("foos")
+    t = Tbl(:foos)
     r = insert!(t, Rec(), cx)
     empty!(t)
     @assert !haskey(t, recid(r), cx)
@@ -791,7 +791,7 @@ end
 
 testDumpLoad() = begin
     cx = Cx()
-    t = Tbl("foos")
+    t = Tbl(:foos)
     r = insert!(t, Rec(), cx)
     buf = TempBuf()
     dump(t, buf)
@@ -803,7 +803,7 @@ end
 
 testDelete() = begin
     cx = Cx()
-    t = Tbl("foos")
+    t = Tbl(:foos)
     r = insert!(t, Rec(), cx)
     id = recid(r)
     delete!(t, id, cx)
@@ -813,7 +813,7 @@ end
 testIODelete() = begin
     cx = Cx()
     buf = TempBuf()
-    t = IO(Tbl("foos"), buf)
+    t = IO(Tbl(:foos), buf)
     r = insert!(t, Rec(), cx)
     id = recid(r)
     delete!(t, id, cx)
@@ -825,9 +825,9 @@ end
 
 testIsdirty() = begin
     cx = Cx()
-    t = Tbl("foobars")
-    foo = BasicCol{Str}("foo")
-    bar = BasicCol{Str}("bar")
+    t = Tbl(:foobars)
+    foo = BasicCol{Str}(:foo)
+    bar = BasicCol{Str}(:bar)
     pushcol!(t, foo, bar)
 
     r = RecOf(foo => "abc", bar => "def")
@@ -848,7 +848,7 @@ end
 
 testOninsert() = begin
     cx = Cx()
-    t = Tbl("foos")
+    t = Tbl(:foos)
     rec = Rec()
     wascalled = false
     oninsert!(t, (r) -> (@assert r == rec; wascalled = true), cx)
@@ -861,8 +861,8 @@ end
 testRevix() = begin
     cx = Cx()
     buf = TempBuf()
-    tbl = IO(Tbl("foos"), buf)
-    rx = Revix("offs", tbl.offsCol) 
+    tbl = IO(Tbl(:foo), buf)
+    rx = Revix(:foo_offs, tbl.offsCol) 
     @assert isempty(rx)
     @assert length(rx) == 0
     pushdep!(tbl, rx, cx)
@@ -887,8 +887,8 @@ end
 
 testDumpLoadRevix() = begin
     cx = Cx()
-    c = BasicCol{Str}("bar")
-    rx = Revix("foo", c)
+    c = BasicCol{Str}(:foo)
+    rx = Revix(:foos, c)
     r = insert!(rx, initrec!(RecOf(c => "abc")), cx)
     
     buf = TempBuf()
@@ -901,9 +901,9 @@ end
 
 testIORevix() = begin
     cx = Cx()
-    c = BasicCol{Str}("bar")
+    c = BasicCol{Str}(:foo)
     buf = TempBuf()
-    rx = IO(Revix("foo", c), buf)
+    rx = IO(Revix(:foos, c), buf)
     rec = insert!(rx, initrec!(RecOf(c => "abc")), cx)
     id = recid(rec)
 

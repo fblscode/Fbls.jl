@@ -1,6 +1,13 @@
 * change writeval imps to write size
 ** replaces sizeofval/write in writerec / dump
 
+* convert RecCol & RefCol to wrappers
+** add constructors Ref(BasicCol( & Rec(BasicCol(
+
+* add examples/Example1.jl file
+** package Examples
+** import Fbls
+
 * remaining issues: 
 ** how to rename BasicCol to Col?
 ** how to best add seq support?
