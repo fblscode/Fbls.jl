@@ -428,9 +428,8 @@ readval(t::Type{Rec}, s::ValSize, in::IOBuf) = readval(RecId, s, in)
 
 readval(t::Type{Str}, s::ValSize, in::IOBuf) = utf8(read(in, UInt8, s))
 
-readval(t::Type{UUID}, s::ValSize, in::IOBuf) = begin
-    return RecId(read(in, UInt128))
-end
+readval(t::Type{UUID}, s::ValSize, in::IOBuf) =
+    RecId(read(in, UInt128))
 
 readval{ValT}(col::Col{ValT}, s::ValSize, in::IOBuf, cx::Cx) = 
     readval(ValT, s, in)
