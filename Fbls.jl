@@ -295,12 +295,12 @@ immutable BasicTbl <: Tbl
     onloadrec::Evt{Tuple{Rec}} 
     onuprec::Evt{Tuple{Rec, Rec}} 
 
-    BasicTbl(name::Str) = begin
-        t = new(name, 
+    BasicTbl(n::Str) = begin
+        t = new(n, 
                 TblCols(),
                 TblRecs(), 
-                BasicCol{DateTime}("$name/ins-time"), 
-                BasicCol{Int64}("$name/rev"),
+                BasicCol{DateTime}("$n/ins-time"), 
+                BasicCol{Int64}("$n/rev"),
                 Evt{Tuple{Rec}}(),
                 Evt{Tuple{Rec}}(),
                 Evt{Tuple{Rec}}(),
@@ -309,6 +309,8 @@ immutable BasicTbl <: Tbl
         return t
     end
 end
+
+Tbl(n::Str) = BasicTbl(n)
 
 cols(tbl::BasicTbl) = values(tbl.cols)
 
@@ -561,7 +563,7 @@ immutable IOTbl <: Tbl
     end
 end
 
-IOTbl(name::Str, buf::IOBuf) = IOTbl(BasicTbl(name), buf)
+IOTbl(name::Str, buf::IOBuf) = IOTbl(Tbl(name), buf)
 
 cols(tbl::IOTbl) = cols(tbl.wrapped)
 
@@ -618,7 +620,7 @@ end
 
 testTblBasics() = begin
     cx = BasicCx()
-    t = BasicTbl("foos")
+    t = Tbl("foos")
     r = insrec!(t, Rec(), cx)
     rid = recid(r)
     @assert rid != Void
@@ -634,7 +636,7 @@ end
 
 testGetrec() = begin
     cx = BasicCx()
-    t = BasicTbl("foos")
+    t = Tbl("foos")
     r = insrec!(t, Rec(), cx)
     gr = getrec(t, recid(r), cx)
     @assert gr == r
@@ -670,7 +672,7 @@ end
 
 testTempCol() = begin
     cx = BasicCx()
-    t = BasicTbl("foo")
+    t = Tbl("foo")
     c = BasicCol{Str}("bar")
     tc = asTempCol(c)
     pushcol!(t, tc)
@@ -688,7 +690,7 @@ end
 
 testRecCol() = begin
     cx = BasicCx()
-    t = BasicTbl("foos")
+    t = Tbl("foos")
     c = RecCol("foo", t)
     foo = insrec!(t, Rec(), cx)
     
@@ -700,7 +702,7 @@ end
 
 testRefCol() = begin
     cx = BasicCx()
-    t = BasicTbl("foos")
+    t = Tbl("foos")
     c = RefCol("foo", t)
     foo = insrec!(t, Rec(), cx)
     
@@ -712,7 +714,7 @@ end
 
 testReadWriteRec() = begin
     cx = BasicCx()
-    t = BasicTbl("foos")
+    t = Tbl("foos")
     c = BasicCol{Str}("bar")
     pushcol!(t, c)
     r = Rec()
@@ -728,8 +730,8 @@ end
 
 testReadWriteRecCol() = begin
     cx = BasicCx()
-    foos = BasicTbl("foos")
-    bars = BasicTbl("bars")
+    foos = Tbl("foos")
+    bars = Tbl("bars")
     barFoo = RecCol("foo", foos)
     pushcol!(bars, barFoo)
     foo = insrec!(foos, Rec(), cx)
@@ -755,7 +757,7 @@ end
 
 testEmptyTbl() = begin
     cx = BasicCx()
-    t = BasicTbl("foos")
+    t = Tbl("foos")
     r = insrec!(t, Rec(), cx)
     empty!(t)
     @assert !haskey(t, recid(r), cx)
@@ -763,7 +765,7 @@ end
 
 testDumpLoadRecs() = begin
     cx = BasicCx()
-    t = BasicTbl("foos")
+    t = Tbl("foos")
     r = insrec!(t, Rec(), cx)
     buf = TempBuf()
     dumprecs(t, buf)
@@ -775,7 +777,7 @@ end
 
 testDelRec() = begin
     cx = BasicCx()
-    t = BasicTbl("foos")
+    t = Tbl("foos")
     r = insrec!(t, Rec(), cx)
     id = recid(r)
     delrec!(t, id, cx)
@@ -797,7 +799,7 @@ end
 
 testIsdirty() = begin
     cx = BasicCx()
-    t = BasicTbl("foobars")
+    t = Tbl("foobars")
     foo = BasicCol{Str}("foo")
     bar = BasicCol{Str}("bar")
     pushcol!(t, foo, bar)
@@ -820,7 +822,7 @@ end
 
 testOninsrec() = begin
     cx = BasicCx()
-    t = BasicTbl("foos")
+    t = Tbl("foos")
     rec = Rec()
     wascalled = false
     oninsrec!(t, (r) -> (@assert r == rec; wascalled = true), cx)
