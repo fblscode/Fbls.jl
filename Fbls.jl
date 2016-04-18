@@ -36,6 +36,8 @@ immutable BasicCx <: Cx
     BasicCx() = new(EvtSubs(), EvtQueues())
 end
 
+Cx() = BasicCx()
+
 evtsub!(evt::AnyEvt, sub::EvtSub, cx::Cx) = begin
     bcx = BasicCx(cx)
 
@@ -619,7 +621,7 @@ loadrecs!(tbl::Tbl, in::IOBuf, cx::Cx) = begin
 end
 
 testTblBasics() = begin
-    cx = BasicCx()
+    cx = Cx()
     t = Tbl("foos")
     r = insrec!(t, Rec(), cx)
     rid = recid(r)
@@ -635,7 +637,7 @@ testTblBasics() = begin
 end
 
 testGetrec() = begin
-    cx = BasicCx()
+    cx = Cx()
     t = Tbl("foos")
     r = insrec!(t, Rec(), cx)
     gr = getrec(t, recid(r), cx)
@@ -643,7 +645,7 @@ testGetrec() = begin
 end
 
 testIOTblBasics() = begin
-    cx = BasicCx()
+    cx = Cx()
     t = IOTbl("foos", TempBuf())
     r = insrec!(t, Rec(), cx)
     @assert recid(r) != Void
@@ -671,7 +673,7 @@ testRecBasics() = begin
 end
 
 testTempCol() = begin
-    cx = BasicCx()
+    cx = Cx()
     t = Tbl("foo")
     c = BasicCol{Str}("bar")
     tc = asTempCol(c)
@@ -689,7 +691,7 @@ testTempCol() = begin
 end
 
 testRecCol() = begin
-    cx = BasicCx()
+    cx = Cx()
     t = Tbl("foos")
     c = RecCol("foo", t)
     foo = insrec!(t, Rec(), cx)
@@ -701,7 +703,7 @@ testRecCol() = begin
 end
 
 testRefCol() = begin
-    cx = BasicCx()
+    cx = Cx()
     t = Tbl("foos")
     c = RefCol("foo", t)
     foo = insrec!(t, Rec(), cx)
@@ -713,7 +715,7 @@ testRefCol() = begin
 end
 
 testReadWriteRec() = begin
-    cx = BasicCx()
+    cx = Cx()
     t = Tbl("foos")
     c = BasicCol{Str}("bar")
     pushcol!(t, c)
@@ -729,7 +731,7 @@ testReadWriteRec() = begin
 end
 
 testReadWriteRecCol() = begin
-    cx = BasicCx()
+    cx = Cx()
     foos = Tbl("foos")
     bars = Tbl("bars")
     barFoo = RecCol("foo", foos)
@@ -756,7 +758,7 @@ testAliasCol() = begin
 end
 
 testEmptyTbl() = begin
-    cx = BasicCx()
+    cx = Cx()
     t = Tbl("foos")
     r = insrec!(t, Rec(), cx)
     empty!(t)
@@ -764,7 +766,7 @@ testEmptyTbl() = begin
 end
 
 testDumpLoadRecs() = begin
-    cx = BasicCx()
+    cx = Cx()
     t = Tbl("foos")
     r = insrec!(t, Rec(), cx)
     buf = TempBuf()
@@ -776,7 +778,7 @@ testDumpLoadRecs() = begin
 end
 
 testDelRec() = begin
-    cx = BasicCx()
+    cx = Cx()
     t = Tbl("foos")
     r = insrec!(t, Rec(), cx)
     id = recid(r)
@@ -785,7 +787,7 @@ testDelRec() = begin
 end
 
 testIODelRec() = begin
-    cx = BasicCx()
+    cx = Cx()
     buf = TempBuf()
     t = IOTbl("foos", buf)
     r = insrec!(t, Rec(), cx)
@@ -798,7 +800,7 @@ testIODelRec() = begin
 end
 
 testIsdirty() = begin
-    cx = BasicCx()
+    cx = Cx()
     t = Tbl("foobars")
     foo = BasicCol{Str}("foo")
     bar = BasicCol{Str}("bar")
@@ -821,7 +823,7 @@ testIsdirty() = begin
 end
 
 testOninsrec() = begin
-    cx = BasicCx()
+    cx = Cx()
     t = Tbl("foos")
     rec = Rec()
     wascalled = false
@@ -833,7 +835,7 @@ testOninsrec() = begin
 end
 
 testRevix() = begin
-    cx = BasicCx()
+    cx = Cx()
     buf = TempBuf()
     tbl = IOTbl("foos", buf)
     rx = Revix("offs", tbl.offsCol) 
@@ -854,7 +856,7 @@ testRevix() = begin
 end
 
 testDumpLoadRevix() = begin
-    cx = BasicCx()
+    cx = Cx()
     c = BasicCol{Str}("bar")
     rx = Revix("foo", c)
     r = insrec!(rx, initrec!(RecOf(c => "abc")), cx)
@@ -868,7 +870,7 @@ testDumpLoadRevix() = begin
 end
 
 testIORevix() = begin
-    cx = BasicCx()
+    cx = Cx()
     c = BasicCol{Str}("bar")
     buf = TempBuf()
     rx = IORevix("foo", c, buf)
