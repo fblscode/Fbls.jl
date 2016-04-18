@@ -126,7 +126,7 @@ end
 
 alias{ValT}(col::Col{ValT}, n::Symbol) = BasicCol{ValT}(n, Fld(col))
 
-convert{ValT}(::Type{Fld}, col::BasicCol{ValT}) = col.fld
+convert{ValT}(::Type{Fld}, col::Col{ValT}) = BasicCol{ValT}(col).fld
 
 defname{ValT}(col::Col{ValT}) = BasicCol{ValT}(col).name
 
@@ -140,8 +140,6 @@ Temp{ValT}(col::Col{ValT}) = TempCol{ValT}(col)
 
 convert{ValT}(::Type{BasicCol{ValT}}, col::TempCol{ValT}) = 
     BasicCol{ValT}(col.wrapped)
-
-convert{ValT}(::Type{Fld}, col::TempCol{ValT}) = Fld(col.wrapped)
 
 istemp(::AnyCol) = false
 istemp{ValT}(::TempCol{ValT}) = true
@@ -445,28 +443,26 @@ next(tbl::Tbl, i) = next(values(BasicTbl(tbl).recs), i)
 start(tbl::Tbl) = start(values(BasicTbl(tbl).recs))
 
 immutable RecCol <: Col{Rec}
-    name::Symbol
-    fld::Fld
+    wrapped::Col{Rec}
     tbl::Tbl
 
-    RecCol(n::Symbol, tbl::Tbl) = new(n, Fld(), tbl)
+    RecCol(col::Col{Rec}, tbl::Tbl) = new(col, tbl)
 end
 
-convert(::Type{Fld}, col::RecCol) = col.fld
+RecCol(n::Symbol, tbl::Tbl) = RecCol(BasicCol{Rec}(n), tbl)
 
-defname(col::RecCol) = col.name
+convert(::Type{BasicCol{Rec}}, col::RecCol) = BasicCol{Rec}(col.wrapped)
 
 immutable RefCol <: Col{RecId}
-    name::Symbol
-    fld::Fld
+    wrapped::Col{RecId}
     tbl::Tbl
 
-    RefCol(n::Symbol, tbl::Tbl) = new(n, Fld(), tbl)
+    RefCol(col::Col{RecId}, tbl::Tbl) = new(col, tbl)
 end
 
-convert(::Type{Fld}, col::RefCol) = col.fld
+RefCol(n::Symbol, tbl::Tbl) = RefCol(BasicCol{RecId}(n), tbl)
 
-defname(col::RefCol) = col.name
+convert(::Type{BasicCol{RecId}}, col::RefCol) = BasicCol{RecId}(col.wrapped)
 
 getref(col::RefCol, rec::Rec, cx::Cx) = get(col.tbl, rec[col], cx)
 
