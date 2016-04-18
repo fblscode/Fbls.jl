@@ -10,6 +10,34 @@ Fbls is currently catching it's breath somewhere between crazy idea and working 
 ## future
 Transactions, hash/ordered indexes and encryption; probably in that order.
 
+```julia
+import Fbls: Cx, BasicCol, RecCol, RecOf, Tbl, insert!, pushcol!
+
+runExample1() = begin
+    # All data ops require a context
+    cx = Cx()
+
+    bars = Tbl(:bars)
+    bar = BasicCol{Int}(:bar)
+
+    # Columns are added to tables using pushcol!
+    pushcol!(bars, bar)
+
+    foos = Tbl(:foos)
+    foo = BasicCol{AbstractString}(:foo)
+
+    # RecCols reference other records
+    foobar = RecCol(:foobar, bars)
+    pushcol!(foos, foo, foobar)
+
+    # RecOf() is a shortcut to create filled records
+    brec = insert!(bars, RecOf(bar => 42), cx)
+    frec = insert!(foos, RecOf(foo => "abc", foobar => brec), cx)
+
+    @assert frec[foobar] == brec
+end
+```
+
 ## columns
 Columns, like pointers, don't do much by themselves besides referencing data that's stored elsewhere. In Fbls, columns are statically typed, meaning they only reference values of a specified type. Julia types with canonical read/write implementations work out of the box, a type conversion facility is provided for anything else.
 
