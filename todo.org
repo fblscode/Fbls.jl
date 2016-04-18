@@ -1,5 +1,3 @@
-* add Temp(...) alias for TempCol
-
 * change writeval imps to write size
 ** replaces sizeofval/write in writerec / dump
 

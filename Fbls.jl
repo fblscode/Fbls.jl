@@ -1,6 +1,6 @@
 module Fbls
 
-import Base: AbstractIOBuffer, ==, convert, delete!, empty!, eof, get, getindex, haskey, position, seekend, setindex!
+import Base: AbstractIOBuffer, ==, convert, delete!, done, empty!, eof, get, getindex, isempty, haskey, length, next, position, seekend, setindex!, start
 import Base.Dates: DateTime, datetime2unix, now, unix2datetime
 import Base.Random: UUID, uuid4
 
@@ -221,6 +221,12 @@ oninsert!(rx::Revix, sub::EvtSub, cx::Cx) =
 onload!(rx::Revix, sub::EvtSub, cx::Cx) = 
     sub!(BasicRevix(rx).onload, sub, cx)
 
+done(rx::Revix, i) = done(BasicRevix(rx).recs, i)
+isempty(rx::Revix) = isempty(BasicRevix(rx).recs)
+length(rx::Revix) = length(BasicRevix(rx).recs)
+next(rx::Revix, i) = next(BasicRevix(rx).recs, i)
+start(rx::Revix) = start(BasicRevix(rx).recs)
+
 dump(rx::Revix, out::IOBuf) = begin
     brx = BasicRevix(rx)
 
@@ -429,7 +435,11 @@ pushcol!(tbl::Tbl, cols::AnyCol...) = begin
     for c in cols bt.cols[defname(c)] = c end
 end
 
-recs(tbl::Tbl) = values(BasicTbl(tbl).recs)
+done(tbl::Tbl, i) = done(values(BasicTbl(tbl).recs), i)
+isempty(tbl::Tbl) = isempty(values(BasicTbl(tbl).recs))
+length(tbl::Tbl) = length(values(BasicTbl(tbl).recs))
+next(tbl::Tbl, i) = next(values(BasicTbl(tbl).recs), i)
+start(tbl::Tbl) = start(values(BasicTbl(tbl).recs))
 
 immutable RecCol <: Col{Rec}
     name::Str
@@ -608,7 +618,7 @@ offs(rec::Rec, tbl::Tbl) = rec[IOTbl(tbl).offsCol]
 prevoffs(rec::Rec, tbl::Tbl) = rec[IOTbl(tbl).prevoffsCol]
 
 dump(tbl::Tbl, out::IOBuf) = begin
-    for r in recs(tbl)
+    for r in tbl
         writerec(tbl, r, out)
     end
 end
