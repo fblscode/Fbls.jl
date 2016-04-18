@@ -1,3 +1,5 @@
+* replace recs() with start/next/isempty/length in Tbl / Revix
+
 * post 
 ** how to rename BasicCol to Col?
 ** how to best add seq support?
