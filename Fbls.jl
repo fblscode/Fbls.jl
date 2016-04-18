@@ -349,6 +349,8 @@ oninsrec!(tbl::Tbl, sub::EvtSub, cx::Cx) =
     evtsub!(BasicTbl(tbl).oninsrec, sub, cx) 
 onloadrec!(tbl::Tbl, sub::EvtSub, cx::Cx) = 
     evtsub!(BasicTbl(tbl).onloadrec, sub, cx)
+onuprec!(tbl::Tbl, sub::EvtSub, cx::Cx) = 
+    evtsub!(BasicTbl(tbl).onuprec, sub, cx) 
 
 pushcol!(tbl::Tbl, cols::AnyCol...) = begin
     bt = BasicTbl(tbl)
