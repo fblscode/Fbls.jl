@@ -89,8 +89,6 @@ end
 
 abstract AnyCol
 
-istemp(::AnyCol) = false
-
 typealias FldId UUID
 
 immutable Fld
@@ -133,17 +131,18 @@ defname{ValT}(col::Col{ValT}) = BasicCol{ValT}(col).name
 
 immutable TempCol{ValT} <: Col{ValT}
     wrapped::Col{ValT}
-    name::Str
 
-    TempCol(col::Col{ValT}, name::Str) = new(col, name)
+    TempCol(col::Col{ValT}) = new(col)
 end
 
-asTempCol{ValT}(col::Col{ValT}; name=defname(col)) = TempCol{ValT}(col, name)
+Temp{ValT}(col::Col{ValT}) = TempCol{ValT}(col)
+
+convert{ValT}(::Type{BasicCol{ValT}}, col::TempCol{ValT}) = 
+    BasicCol{ValT}(col.wrapped)
 
 convert{ValT}(::Type{Fld}, col::TempCol{ValT}) = Fld(col.wrapped)
 
-defname{ValT}(col::TempCol{ValT}) = defname(col.wrapped)
-
+istemp(::AnyCol) = false
 istemp{ValT}(::TempCol{ValT}) = true
 
 RecId() = uuid4()
@@ -254,8 +253,8 @@ immutable IORevix{ValT} <: Revix{ValT}
     IORevix(rx::Revix{ValT}, buf::IOBuf) = new(rx, buf)
 end
 
-IORevix{ValT}(name::Str, col::Col{ValT}, buf::IOBuf) =
-    IORevix{ValT}(BasicRevix{ValT}(name, col), buf)
+IO{ValT}(rx::Revix{ValT}, buf::IOBuf) =
+    IORevix{ValT}(rx, buf)
 
 convert(::Type{BasicRevix}, rx::IORevix) = BasicRevix(rx.wrapped)
 
@@ -556,8 +555,7 @@ immutable IOTbl <: Tbl
     offsCol::Col{Offs}
     prevoffsCol::Col{Offs}
     
-    IOTbl(tbl::Tbl, buf::IOBuf;
-          offsCol = BasicCol{Offs}("$(defname(tbl))/offs")) = begin
+    IOTbl(tbl::Tbl, buf::IOBuf, offsCol::Col{Offs}) = begin
         t = new(tbl, buf, offsCol, 
                 BasicCol{Offs}("$(defname(tbl))/prevoffs"))
         pushcol!(tbl, isdelCol, t.offsCol, t.prevoffsCol)
@@ -565,7 +563,8 @@ immutable IOTbl <: Tbl
     end
 end
 
-IOTbl(name::Str, buf::IOBuf) = IOTbl(Tbl(name), buf)
+IO(tbl::Tbl, buf::IOBuf; offsCol = BasicCol{Offs}("$(defname(tbl))/offs")) = 
+    IOTbl(tbl, buf, offsCol)
 
 cols(tbl::IOTbl) = cols(tbl.wrapped)
 
@@ -646,7 +645,7 @@ end
 
 testIOTblBasics() = begin
     cx = Cx()
-    t = IOTbl("foos", TempBuf())
+    t = IO(Tbl("foos"), TempBuf())
     r = insert!(t, Rec(), cx)
     @assert recid(r) != Void
     @assert recrev(r, t) == 1
@@ -676,7 +675,7 @@ testTempCol() = begin
     cx = Cx()
     t = Tbl("foo")
     c = BasicCol{Str}("bar")
-    tc = asTempCol(c)
+    tc = Temp(c)
     pushcol!(t, tc)
 
     r = Rec()
@@ -789,7 +788,7 @@ end
 testIODelete() = begin
     cx = Cx()
     buf = TempBuf()
-    t = IOTbl("foos", buf)
+    t = IO(Tbl("foos"), buf)
     r = insert!(t, Rec(), cx)
     id = recid(r)
     delete!(t, id, cx)
@@ -837,7 +836,7 @@ end
 testRevix() = begin
     cx = Cx()
     buf = TempBuf()
-    tbl = IOTbl("foos", buf)
+    tbl = IO(Tbl("foos"), buf)
     rx = Revix("offs", tbl.offsCol) 
     pushdep!(tbl, rx, cx)
     rec = insert!(tbl, Rec(), cx)
@@ -872,7 +871,7 @@ testIORevix() = begin
     cx = Cx()
     c = BasicCol{Str}("bar")
     buf = TempBuf()
-    rx = IORevix("foo", c, buf)
+    rx = IO(Revix("foo", c), buf)
     rec = insert!(rx, initrec!(RecOf(c => "abc")), cx)
     id = recid(rec)
 
