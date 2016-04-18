@@ -1,15 +1,6 @@
 # Fbls.jl
 ### a simple but flexible Julia DB
 
-## the biggish picture
-Fbls is an attempt at adding more degrees of freedom to the database paradigm, it's an itch I've been scratching for a while now. I'm all for standards as interfaces and theory as a starting point; but I'm drawing a line in the sand right here, the madness has to stop. All I ever really cared about was the ability to store, index and retrieve my data. I'm sick and tired of query languages, constraints and limitations; of being forced to bend ideas backwards around hairy solutions to someone else's problems, just to gain basic persistence.
-
-## status
-Fbls is currently catching it's breath somewhere between crazy idea and working prototype. It represents my first major Julia project and I'm still feeling my way around the language. Basic testing is in place and the examples in this document should work as advertised.
-
-## future
-Transactions, hash/ordered indexes and encryption; probably in that order.
-
 ```julia
 import Fbls: Cx, BasicCol, RecCol, RecOf, Tbl, insert!, pushcol!
 
@@ -37,6 +28,15 @@ runExample1() = begin
     @assert frec[foobar] == brec
 end
 ```
+
+## the biggish picture
+Fbls is an attempt at adding more degrees of freedom to the database paradigm, it's an itch I've been scratching for a while now. I'm all for standards as interfaces and theory as a starting point; but I'm drawing a line in the sand right here, the madness has to stop. All I ever really cared about was the ability to store, index and retrieve my data. I'm sick and tired of query languages, constraints and limitations; of being forced to bend ideas backwards around hairy solutions to someone else's problems, just to gain basic persistence.
+
+## status
+Fbls is currently catching it's breath somewhere between crazy idea and working prototype. It represents my first major Julia project and I'm still feeling my way around the language. Basic testing is in place and the examples in this document should work as advertised.
+
+## future
+Transactions, hash/ordered indexes and encryption; probably in that order.
 
 ## columns
 Columns, like pointers, don't do much by themselves besides referencing data that's stored elsewhere. In Fbls, columns are statically typed, meaning they only reference values of a specified type. Julia types with canonical read/write implementations work out of the box, a type conversion facility is provided for anything else.
