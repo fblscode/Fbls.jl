@@ -1,9 +1,14 @@
+* rename insert to upsert in all files
+
 * try one more time to add Col{}() constructor
 
 * end readme with async event io example based on offsidx test
 ** add custom type/read/writeval
 ** add tempcol with custom type
 *** no read/writeval needed
+** keep offs idx in memory
+** call writerec directly on tbl
+*** add specialization without buf
 
 * remaining issues: 
 ** how to rename BasicCol to Col?

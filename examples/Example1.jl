@@ -3,8 +3,8 @@ module Examples
 push!(LOAD_PATH, "..")
 
 import Base: IOBuffer, seekstart
-import Fbls: Cx, BasicCol, RecCol, RecOf, Tbl, dump, get, haskey, insert!, 
-isempty, length, load!, pushcol!, recid
+import Fbls: Cx, BasicCol, RecCol, RecOf, Tbl, dump, get, haskey, 
+isempty, length, load!, pushcol!, recid, upsert!
 
 runExample1() = begin
     # All data ops require a context
@@ -24,13 +24,13 @@ runExample1() = begin
     pushcol!(foos, foo, foobar)
 
     # RecOf() is a shortcut to create filled records
-    brec = insert!(bars, RecOf(bar => 42), cx)
+    brec = upsert!(bars, RecOf(bar => 42), cx)
     @assert !isempty(bars)
 
-    # Records are initialized with globally unique ids on first insert
+    # Records are initialized with globally unique ids on first upsert
     @assert get(bars, recid(brec), cx) == brec    
 
-    frec = insert!(foos, RecOf(foo => "abc", foobar => brec), cx)
+    frec = upsert!(foos, RecOf(foo => "abc", foobar => brec), cx)
     @assert length(foos) == 1
     @assert haskey(foos, recid(frec), cx)
 

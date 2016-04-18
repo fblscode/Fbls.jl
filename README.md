@@ -4,7 +4,7 @@
 ```julia
 
 import Base: IOBuffer, seekstart
-import Fbls: Cx, BasicCol, RecCol, RecOf, Tbl, dump, get, haskey, insert!, 
+import Fbls: Cx, BasicCol, RecCol, RecOf, Tbl, dump, get, haskey, upsert!, 
 isempty, length, load!, pushcol!, recid
 
 runExample1() = begin
@@ -25,13 +25,13 @@ runExample1() = begin
     pushcol!(foos, foo, foobar)
 
     # RecOf() is a shortcut to create filled records
-    brec = insert!(bars, RecOf(bar => 42), cx)
+    brec = upsert!(bars, RecOf(bar => 42), cx)
     @assert !isempty(bars)
 
-    # Records are initialized with globally unique ids on first insert
+    # Records are initialized with globally unique ids on first upsert
     @assert get(bars, recid(brec), cx) == brec    
 
-    frec = insert!(foos, RecOf(foo => "abc", foobar => brec), cx)
+    frec = upsert!(foos, RecOf(foo => "abc", foobar => brec), cx)
     @assert length(foos) == 1
     @assert haskey(foos, recid(frec), cx)
 
@@ -72,7 +72,7 @@ Tables map globally unique ids to records. Each table contains a set of columns 
 A reverse index maps record ids to values for a specific column. Combining a reverse offset index with an IO table is a nice trick to enable lazy loading of records.
 
 ## async events
-Tables and indexes have load, insert and delete events that can be hooked into. All events are logged in the current context and pumped asynchronously by calling doevts!.
+Tables and indexes have load, upsert and delete events that can be hooked into. All events are logged in the current context and pumped asynchronously by calling doevts!.
 
 ## wrap on, wrap off
 Fbls uses wrapping extensively to enable arbitrary combinations of functionality. Any table can be wrapped by an IO table to add stream logging, any number of layers can be wrapped on top; and all the pieces are still accessible in their original state, the initial table reference still knows nothing about IO. Any column can be made temporary, the same column can even be temporary in one table and persistent in another.
