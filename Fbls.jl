@@ -121,8 +121,8 @@ immutable BasicCol{ValT} <: Col{ValT}
     name::Str
     fld::Fld
 
-    BasicCol(name::Str, fld::Fld) = new(name, fld)
-    BasicCol(name::Str) = new(name, Fld())
+    BasicCol(n::Str, f::Fld) = new(n, f)
+    BasicCol(n::Str) = new(n, Fld())
 end
 
 alias{ValT}(col::Col{ValT}, n::Str) = BasicCol{ValT}(n, Fld(col))

@@ -8,7 +8,7 @@ fbls is an attempt at adding more degrees of freedom to the database paradigm, i
 fbls is currently catching it's breath somewhere between crazy idea and working prototype. It represents my first major Julia project and I'm still feeling my way around the language. Basic testing is in place and the examples in this document should work as advertised.
 
 ## future
-Transactions, hash/ordered indexes and encryption; most probably in that order.
+Transactions, hash/ordered indexes and encryption; probably in that order.
 
 ## columns
 Columns, like pointers, don't do much by themselves besides referencing data that's stored elsewhere. In fbls, columns are statically typed, meaning they only reference values of a specified type. Julia types with canonical read/write implementations work out of the box, a type conversion facility is provided for anything else.

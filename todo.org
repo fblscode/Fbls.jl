@@ -1,9 +1,5 @@
-* add IORevix
-** same setup as IOTbl
-** write del rec on del
-** write val rec on ins
-
 * post 
+** how to rename BasicCol to Col?
 ** how to best add seq support?
 ** any way to steal the tuple parametric vararg magic?
 ** any way to get parametric function types?
