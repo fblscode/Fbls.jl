@@ -849,7 +849,6 @@ testRevix() = begin
     empty!(tbl)
     @assert get(tbl, rx, id, cx) == rec
     doevts!(cx)
-
     delete!(tbl, rec, cx)
     doevts!(cx)
     @assert !haskey(rx, id, cx)
