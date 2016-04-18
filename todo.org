@@ -1,11 +1,15 @@
+* change writeval imps to write size
+** replaces sizeofval/write in writerec / dump
+
 * replace recs() with start/next/isempty/length in Tbl / Revix
 
-* post 
+* remaining issues: 
 ** how to rename BasicCol to Col?
 ** how to best add seq support?
 ** any way to steal the tuple parametric vararg magic?
 ** any way to get parametric function types?
 ** better alternative to returning Void from getindex?
+** any special vars
 
 * ---
 

@@ -38,7 +38,7 @@ end
 
 Cx() = BasicCx()
 
-evtsub!(evt::AnyEvt, sub::EvtSub, cx::Cx) = begin
+sub!(evt::AnyEvt, sub::EvtSub, cx::Cx) = begin
     bcx = BasicCx(cx)
 
     subs = if haskey(bcx.evtsubs, evt)
@@ -50,7 +50,7 @@ evtsub!(evt::AnyEvt, sub::EvtSub, cx::Cx) = begin
     push!(subs, sub)
 end
 
-evtunsub!(evt::AnyEvt, sub::EvtSub, cx::Cx) = 
+unsub!(evt::AnyEvt, sub::EvtSub, cx::Cx) = 
     delete!(BasicCx(cx).subs[evt], sub)
 
 pushevt!{ArgsT}(evt::Evt{ArgsT}, args::ArgsT, cx::Cx) = begin
@@ -216,11 +216,11 @@ load!(rx::Revix, rec::Rec, cx::Cx) = begin
 end
 
 ondelete!(rx::Revix, sub::EvtSub, cx::Cx) = 
-    evtsub!(BasicRevix(rx).ondelete, sub, cx)
+    sub!(BasicRevix(rx).ondelete, sub, cx)
 oninsert!(rx::Revix, sub::EvtSub, cx::Cx) = 
-    evtsub!(BasicRevix(rx).oninsert, sub, cx) 
+    sub!(BasicRevix(rx).oninsert, sub, cx) 
 onload!(rx::Revix, sub::EvtSub, cx::Cx) = 
-    evtsub!(BasicRevix(rx).onload, sub, cx)
+    sub!(BasicRevix(rx).onload, sub, cx)
 
 dump(rx::Revix, out::IOBuf) = begin
     brx = BasicRevix(rx)
@@ -417,13 +417,13 @@ load!(tbl::Tbl, rec::Rec, cx::Cx) = begin
 end
 
 ondelete!(tbl::Tbl, sub::EvtSub, cx::Cx) = 
-    evtsub!(BasicTbl(tbl).ondelete, sub, cx) 
+    sub!(BasicTbl(tbl).ondelete, sub, cx) 
 oninsert!(tbl::Tbl, sub::EvtSub, cx::Cx) = 
-    evtsub!(BasicTbl(tbl).oninsert, sub, cx) 
+    sub!(BasicTbl(tbl).oninsert, sub, cx) 
 onload!(tbl::Tbl, sub::EvtSub, cx::Cx) = 
-    evtsub!(BasicTbl(tbl).onload, sub, cx)
+    sub!(BasicTbl(tbl).onload, sub, cx)
 onuprec!(tbl::Tbl, sub::EvtSub, cx::Cx) = 
-    evtsub!(BasicTbl(tbl).onuprec, sub, cx) 
+    sub!(BasicTbl(tbl).onuprec, sub, cx) 
 
 pushcol!(tbl::Tbl, cols::AnyCol...) = begin
     bt = BasicTbl(tbl)
