@@ -2,7 +2,8 @@
 ### a simple but flexible Julia DB
 
 ```julia
-import Fbls: Cx, BasicCol, RecCol, RecOf, Tbl, insert!, pushcol!
+
+import Fbls: Cx, BasicCol, RecCol, RecOf, Tbl, haskey, insert!, length, pushcol!, recid
 
 runExample1() = begin
     # All data ops require a context
@@ -23,10 +24,17 @@ runExample1() = begin
 
     # RecOf() is a shortcut to create filled records
     brec = insert!(bars, RecOf(bar => 42), cx)
+    @assert !isempty(bars)
+
+    # Records are initialized with globally unique id on first insert
+    @assert haskey(bars, recid(brec), cx)
+
     frec = insert!(foos, RecOf(foo => "abc", foobar => brec), cx)
+    @assert length(foos) == 1
 
     @assert frec[foobar] == brec
 end
+
 ```
 
 ## the biggish picture
