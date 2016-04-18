@@ -8,13 +8,22 @@ fbls is an attempt at adding more degrees of freedom to the database paradigm, i
 fbls is currently catching it's breath somewhere between crazy idea and working prototype. It represents my first major Julia project and I'm still feeling my way around the language. Basic testing is in place and the examples in this document should work as advertised.
 
 ## future
-Transactions, indexing and encryption; most probably in that order.
+Transactions, hash/ordered indexes and encryption; most probably in that order.
 
 ## columns
-Columns, like pointers, don't do much by themselves besides referencing data that's stored elsewhere. In fbls, columns are statically typed, meaning they only reference values of a specified type. Any Julia type will do, as long as it has a canonical read/write implementation or is hooked into fbls type conversion facility.
+Columns, like pointers, don't do much by themselves besides referencing data that's stored elsewhere. In fbls, columns are statically typed, meaning they only reference values of a specified type. Julia types with canonical read/write implementations work out of the box, a type conversion facility is provided for anything else.
 
 ## records
 Records maps fields to values. Fields usually belong to columns, but custom fields can be created by simply instantiating the Fld type. Two columns can even share the same field by aliasing. Fields are immutable and globally unique.
 
 ## tables
 Tables map globally unique ids to records. Each table contains a set of columns that all records are projected onto. This means that even though a record can contain values from multiple tables, any specific table will only store values mapped to it's own set of columns. 
+
+## reverse indexes
+A reverse index maps record ids to values for a specific column. Combining a reverse offset index with an IO table is a nice trick to enable lazy loading of records.
+
+## async events
+Tables and indexes have load, insert and delete events that can be hooked into. All events are logged in the current context and pumped asynchronously by calling doevts!.
+
+## wrap on, wrap off
+fbls uses wrapping extensively to allow arbitrary combinations of functionality. Any table can be wrapped by an IO table to add stream logging, any number of layers can be wrapped on top; and all the pieces are still accessible in their original state, the initial table reference still knows nothing about IO. Any column can be made temporary, the same column can even be temporary in one table and persistent in another.
