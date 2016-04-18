@@ -4,7 +4,8 @@
 ```julia
 
 import Base: IOBuffer, seekstart
-import Fbls: Cx, BasicCol, RecCol, RecOf, Tbl, dump, get, haskey, insert!, isempty, length, load!, pushcol!, recid
+import Fbls: Cx, BasicCol, RecCol, RecOf, Tbl, dump, get, haskey, insert!, 
+isempty, length, load!, pushcol!, recid
 
 runExample1() = begin
     # All data ops require a context
