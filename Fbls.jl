@@ -163,9 +163,11 @@ pushdep!(def, dep, cx::Cx) = begin
     onloadrec!(def, (rec) -> loadrec!(dep, rec, cx), cx)
 end
 
+abstract Revix{ValT}
+
 typealias RevixRecs{ValT} Dict{RecId, ValT}
 
-immutable Revix{ValT}
+immutable BasicRevix{ValT} <: Revix{ValT}
     name::Str
     col::Col{ValT}
     recs::RevixRecs{ValT}
@@ -173,64 +175,106 @@ immutable Revix{ValT}
     oninsrec::Evt{Tuple{Rec}} 
     onloadrec::Evt{Tuple{Rec}} 
 
-    Revix(n::Str, c::Col{ValT}) = new(n, c, 
-                                      RevixRecs{ValT}(), 
-                                      Evt{Tuple{Rec}}(),
-                                      Evt{Tuple{Rec}}(),
-                                      Evt{Tuple{Rec}}())
+    BasicRevix(n::Str, c::Col{ValT}) = new(n, c, 
+                                           RevixRecs{ValT}(), 
+                                           Evt{Tuple{Rec}}(),
+                                           Evt{Tuple{Rec}}(),
+                                           Evt{Tuple{Rec}}())
 end
 
-defname(rx::Revix) = rx.name
+defname(rx::Revix) = BasicRevix(rx).name
 
-empty!(rx::Revix) = empty!(rx.recs)
+empty!(rx::Revix) = empty!(BasicRevix(rx).recs)
 
-getval{ValT}(rx::Revix{ValT}, id::RecId, cx::Cx) = rx.recs[id]
+getval{ValT}(rx::Revix{ValT}, id::RecId, cx::Cx) = BasicRevix{ValT}(rx).recs[id]
 
-haskey(rx::Revix, id::RecId, cx::Cx) = haskey(rx.recs, id)
+haskey(rx::Revix, id::RecId, cx::Cx) = haskey(BasicRevix(rx).recs, id)
 
 delrec!(rx::Revix, rec::Rec, cx::Cx) = begin
-    delete!(rx.recs, recid(rec))
-    pushevt!(rx.ondelrec, (rec,), cx)
+    brx = BasicRevix(rx)
+    delete!(brx.recs, recid(rec))
+    pushevt!(brx.ondelrec, (rec,), cx)
     return rec
 end
 
 insrec!(rx::Revix, rec::Rec, cx::Cx) = begin
-    rx.recs[recid(rec)] = rec[rx.col]
-    pushevt!(rx.oninsrec, (rec,), cx)
+    brx = BasicRevix(rx)
+    brx.recs[recid(rec)] = rec[brx.col]
+    pushevt!(brx.oninsrec, (rec,), cx)
     return rec
 end
 
 loadrec!(rx::Revix, rec::Rec, cx::Cx) = begin
-    rx.recs[recid(rec)] = rec[rx.col]
-    pushevt!(rx.onloadrec, (rec,), cx)
+    brx = BasicRevix(rx)
+    brx.recs[recid(rec)] = rec[brx.col]
+    pushevt!(brx.onloadrec, (rec,), cx)
     return rec
 end
 
 ondelrec!(rx::Revix, sub::EvtSub, cx::Cx) = 
-    evtsub!(rx.ondelrec, sub, cx)
+    evtsub!(BasicRevix(rx).ondelrec, sub, cx)
 oninsrec!(rx::Revix, sub::EvtSub, cx::Cx) = 
-    evtsub!(rx.oninsrec, sub, cx) 
+    evtsub!(BasicRevix(rx).oninsrec, sub, cx) 
 onloadrec!(rx::Revix, sub::EvtSub, cx::Cx) = 
-    evtsub!(rx.onloadrec, sub, cx)
+    evtsub!(BasicRevix(rx).onloadrec, sub, cx)
 
 dumprecs(rx::Revix, out::IOBuf) = begin
-    for (id, val) in rx.recs
+    brx = BasicRevix(rx)
+
+    for (id, val) in brx.recs
         writeval(id, out)
         write(out, ValSize(sizeofval(val)))
-        writeval(rx.col, val, out)
+        writeval(brx.col, val, out)
     end
 end
 
 loadrecs!(rx::Revix, in::IOBuf, cx::Cx) = begin
+    brx = BasicRevix(rx)
+
     while !eof(in)
         id = readval(UUID, -1, in)
         s = read(in, ValSize)
+
         if s == -1
-            delete!(rx.recs, id)
+            delete!(brx.recs, id)
         else
-            rx.recs[id] = readval(rx.col, s, in, cx)
+            brx.recs[id] = readval(brx.col, s, in, cx)
         end
     end
+end
+
+immutable IORevix{ValT} <: Revix{ValT}
+    wrapped::Revix{ValT}
+    buf::IOBuf
+    
+    IORevix(rx::Revix{ValT}, buf::IOBuf) = new(rx, buf)
+end
+
+IORevix{ValT}(name::Str, col::Col{ValT}, buf::IOBuf) =
+    IORevix{ValT}(BasicRevix{ValT}(name, col), buf)
+
+convert(::Type{BasicRevix}, rx::IORevix) = BasicRevix(rx.wrapped)
+
+convert{ValT}(::Type{BasicRevix{ValT}}, rx::IORevix{ValT}) = BasicRevix{ValT}(rx.wrapped)
+
+delrec!(rx::IORevix, rec::Rec, cx::Cx) = begin
+    delrec!(rx.wrapped, rec, cx)
+    seekend(rx.buf)
+    writeval(recid(rec), rx.buf)
+    write(rx.buf, ValSize(-1)) 
+    return rec
+end
+
+insrec!(rx::IORevix, rec::Rec, cx::Cx) = begin
+    insrec!(rx.wrapped, rec, cx)
+    seekend(rx.buf)
+    writeval(recid(rec), rx.buf)
+    col = BasicRevix(rx).col
+    v = rec[col]
+    s = ValSize(sizeofval(v))
+    write(rx.buf, s)
+    writeval(col, v, rx.buf)
+    return rec
 end
 
 typealias TblCols Dict{Str, AnyCol}
@@ -502,23 +546,20 @@ end
 
 immutable IOTbl <: Tbl
     wrapped::Tbl
-    name::Str
     buf::IOBuf
     offsCol::Col{Offs}
     prevoffsCol::Col{Offs}
     
-    IOTbl(tbl::Tbl, name::Str, buf::IOBuf;
-          offsCol = BasicCol{Offs}("$name/offs")) = begin
-        t = new(tbl, name, buf, offsCol, 
-                BasicCol{Offs}("$name/prevoffs"))
+    IOTbl(tbl::Tbl, buf::IOBuf;
+          offsCol = BasicCol{Offs}("$(defname(tbl))/offs")) = begin
+        t = new(tbl, buf, offsCol, 
+                BasicCol{Offs}("$(defname(tbl))/prevoffs"))
         pushcol!(tbl, isdelCol, t.offsCol, t.prevoffsCol)
         return t
     end
 end
 
-asIOTbl(tbl::Tbl, buf::IOBuf; name = defname(tbl)) = IOTbl(tbl, name, buf)
-
-IOTbl(name::Str, buf::IOBuf) = asIOTbl(BasicTbl(name), buf)
+IOTbl(name::Str, buf::IOBuf) = IOTbl(BasicTbl(name), buf)
 
 cols(tbl::IOTbl) = cols(tbl.wrapped)
 
@@ -791,7 +832,7 @@ testRevix() = begin
     cx = BasicCx()
     buf = TempBuf()
     tbl = IOTbl("foos", buf)
-    rx = Revix{Offs}("offs", tbl.offsCol) 
+    rx = BasicRevix{Offs}("offs", tbl.offsCol) 
     pushdep!(tbl, rx, cx)
     rec = insrec!(tbl, Rec(), cx)
     id = recid(rec)
@@ -811,7 +852,7 @@ end
 testDumpLoadRevix() = begin
     cx = BasicCx()
     c = BasicCol{Str}("bar")
-    rx = Revix{Str}("foo", c)
+    rx = BasicRevix{Str}("foo", c)
     r = insrec!(rx, initrec!(RecOf(c => "abc")), cx)
     
     buf = TempBuf()
@@ -820,6 +861,26 @@ testDumpLoadRevix() = begin
     seekstart(buf)
     loadrecs!(rx, buf, cx)
     @assert getval(rx, recid(r), cx) == "abc"
+end
+
+testIORevix() = begin
+    cx = BasicCx()
+    c = BasicCol{Str}("bar")
+    buf = TempBuf()
+    rx = IORevix("foo", c, buf)
+    rec = insrec!(rx, initrec!(RecOf(c => "abc")), cx)
+    id = recid(rec)
+
+    empty!(rx)
+    seekstart(buf)
+    loadrecs!(rx, buf, cx)
+    
+    @assert getval(rx, id, cx) == "abc"
+
+    delrec!(rx, rec, cx)
+    seekstart(buf)
+    loadrecs!(rx, buf, cx)
+    @assert !haskey(rx, id, cx)
 end
 
 testAll() = begin
@@ -841,6 +902,7 @@ testAll() = begin
     testOninsrec()
     testRevix()
     testDumpLoadRevix()
+    testIORevix()
 end
 
 end
