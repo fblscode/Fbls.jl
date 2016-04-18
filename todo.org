@@ -1,5 +1,3 @@
-* rename insert to upsert in all files
-
 * try one more time to add Col{}() constructor
 
 * end readme with async event io example based on offsidx test

@@ -158,12 +158,6 @@ recid(r::Rec) = r[idCol]
     return lid != Void && rid != Void && lid == rid
 end
 
-pushdep!(def, dep, cx::Cx) = begin
-    ondelete!(def, (rec) -> delete!(dep, rec, cx), cx)
-    onload!(def, (rec) -> load!(dep, rec, cx), cx)
-    onupsert!(def, (_, rec) -> upsert!(dep, rec, cx), cx)
-end
-
 abstract Revix{ValT}
 
 typealias RevixRecs{ValT} Dict{RecId, ValT}
@@ -288,6 +282,12 @@ typealias TblCols Dict{Symbol, AnyCol}
 typealias TblRecs Dict{RecId, Rec} 
 
 abstract Tbl
+
+pushdep!(tbl::Tbl, dep, cx::Cx) = begin
+    ondelete!(tbl, (rec) -> delete!(dep, rec, cx), cx)
+    onload!(tbl, (rec) -> load!(dep, rec, cx), cx)
+    onupsert!(tbl, (_, rec) -> upsert!(dep, rec, cx), cx)
+end
 
 immutable BasicTbl <: Tbl
     name::Symbol
