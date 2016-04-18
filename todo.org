@@ -1,8 +1,8 @@
-* change writeval imps to write size
-** replaces sizeofval/write in writerec / dump
-
 * convert RecCol & RefCol to wrappers
 ** add constructors Ref(BasicCol( & Rec(BasicCol(
+
+* change writeval imps to write size
+** replaces sizeofval/write in writerec / dump
 
 * add examples/Example1.jl file
 ** package Examples

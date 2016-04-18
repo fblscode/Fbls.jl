@@ -665,6 +665,7 @@ testGet() = begin
     t = Tbl(:foos)
     r = insert!(t, Rec(), cx)
     gr = get(t, recid(r), cx)
+
     @assert gr == r
 end
 
@@ -675,6 +676,7 @@ testIOTblBasics() = begin
     @assert recid(r) != Void
     @assert revision(r, t) == 1
     @assert insertedat(r, t) != Void
+    
     roffs = offs(r, t)
     @assert roffs > -1
     @assert prevoffs(r, t) == -1
@@ -688,10 +690,12 @@ testRecBasics() = begin
     r = Rec()
     c = BasicCol{Str}(:foo)
     @assert r[c] == Void
+    
     r[c] = "abc"
     r[c] = "def"
     @assert r[c] == "def"
     @assert length(r) == 1
+    
     delete!(r, c)
     @assert length(r) == 0
 end
@@ -722,7 +726,6 @@ testRecCol() = begin
     
     r = Rec()
     r[c] = foo
-
     @assert r[c] == foo
 end
 
@@ -734,7 +737,6 @@ testRefCol() = begin
     
     r = Rec()
     r[c] = recid(foo)
-
     @assert getref(c, r, cx) == foo
 end
 
@@ -743,6 +745,7 @@ testReadWriteRec() = begin
     t = Tbl(:foos)
     c = BasicCol{Str}(:bar)
     pushcol!(t, c)
+
     r = Rec()
     r[c] = "abc"
     insert!(t, r, cx)
@@ -760,6 +763,7 @@ testReadWriteRecCol() = begin
     bars = Tbl(:bars)
     barFoo = RecCol(:foo, foos)
     pushcol!(bars, barFoo)
+
     foo = insert!(foos, Rec(), cx)
     
     bar = Rec()
@@ -786,6 +790,7 @@ testEmptyTbl() = begin
     t = Tbl(:foos)
     r = insert!(t, Rec(), cx)
     empty!(t)
+
     @assert !haskey(t, recid(r), cx)
 end
 
@@ -798,6 +803,7 @@ testDumpLoad() = begin
     empty!(t)
     seekstart(buf)
     load!(t, buf, cx)
+
     @assert get(t, recid(r), cx) == r
 end
 
@@ -807,6 +813,7 @@ testDelete() = begin
     r = insert!(t, Rec(), cx)
     id = recid(r)
     delete!(t, id, cx)
+
     @assert !haskey(t, id, cx)
 end
 
@@ -820,6 +827,7 @@ testIODelete() = begin
     empty!(t)
     seekstart(buf)
     load!(t, buf, cx)
+
     @assert !haskey(t, id, cx)
 end
 
@@ -831,7 +839,6 @@ testIsdirty() = begin
     pushcol!(t, foo, bar)
 
     r = RecOf(foo => "abc", bar => "def")
-
     @assert isdirty(t, r)
     @assert isdirty(t, r, foo, bar)
 
@@ -853,6 +860,7 @@ testOninsert() = begin
     wascalled = false
     oninsert!(t, (r) -> (@assert r == rec; wascalled = true), cx)
     insert!(t, rec, cx)
+
     @assert !wascalled
     @assert doevts!(cx) == 1
     @assert wascalled
@@ -865,8 +873,8 @@ testRevix() = begin
     rx = Revix(:foo_offs, tbl.offsCol) 
     @assert isempty(rx)
     @assert length(rx) == 0
-    pushdep!(tbl, rx, cx)
 
+    pushdep!(tbl, rx, cx)
     rec = insert!(tbl, Rec(), cx)
     id = recid(rec)
     @assert doevts!(cx) == 1
@@ -877,6 +885,7 @@ testRevix() = begin
     
     empty!(tbl)
     @assert get(tbl, rx, id, cx) == rec
+
     doevts!(cx)
     delete!(tbl, rec, cx)
     doevts!(cx)
@@ -896,6 +905,7 @@ testDumpLoadRevix() = begin
     empty!(rx)
     seekstart(buf)
     load!(rx, buf, cx)
+
     @assert get(rx, recid(r), cx) == "abc"
 end
 
@@ -909,8 +919,7 @@ testIORevix() = begin
 
     empty!(rx)
     seekstart(buf)
-    load!(rx, buf, cx)
-    
+    load!(rx, buf, cx)    
     @assert get(rx, id, cx) == "abc"
 
     delete!(rx, rec, cx)
