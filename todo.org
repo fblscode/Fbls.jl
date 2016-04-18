@@ -1,3 +1,13 @@
+* try to convert to sync events
+** move subs to Evt
+** rename pushevt! to push!
+** remove cx params from evt fns
+** change ondelrec to take RecId
+** remove prec param from onupsert
+** change ondelete!/upsert!/load! to return Evt
+*** adapt code to call sub!
+** adapt pushdep!
+
 * try one more time to add Col{}() constructor
 
 * end readme with async event io example based on offsidx test
