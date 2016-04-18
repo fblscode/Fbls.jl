@@ -632,7 +632,13 @@ end
 testTblBasics() = begin
     cx = Cx()
     t = Tbl("foos")
+    @assert isempty(t)
+    @assert length(t) == 0
+
     r = insert!(t, Rec(), cx)
+    @assert !isempty(t)
+    @assert length(t) == 1
+
     rid = recid(r)
     @assert rid != Void
     @assert recrev(r, t) == 1
@@ -640,6 +646,8 @@ testTblBasics() = begin
     @assert rinstime != Void
 
     insert!(t, r, cx)
+    @assert !isempty(t)
+    @assert length(t) == 1
     @assert recid(r) == rid
     @assert instime(r, t) >= rinstime
     @assert recrev(r, t) == 2
@@ -848,11 +856,16 @@ testRevix() = begin
     buf = TempBuf()
     tbl = IO(Tbl("foos"), buf)
     rx = Revix("offs", tbl.offsCol) 
+    @assert isempty(rx)
+    @assert length(rx) == 0
     pushdep!(tbl, rx, cx)
+
     rec = insert!(tbl, Rec(), cx)
     id = recid(rec)
     @assert doevts!(cx) == 1
     @assert haskey(rx, id, cx)
+    @assert !isempty(rx)
+    @assert length(rx) == 1
     @assert get(rx, id, cx) == offs(rec, tbl)
     
     empty!(tbl)
@@ -860,6 +873,8 @@ testRevix() = begin
     doevts!(cx)
     delete!(tbl, rec, cx)
     doevts!(cx)
+    @assert isempty(rx)
+    @assert length(rx) == 0
     @assert !haskey(rx, id, cx)
 end
 
