@@ -2,10 +2,10 @@
 ### a simple but flexible Julia DB
 
 ## the biggish picture
-fbls is an attempt at adding more degrees of freedom to the database paradigm, it's an itch I've been scratching for a while now. I'm all for standards as interfaces and theory as a starting point; but I'm drawing a line in the sand right here, the madness has to stop. All I ever really cared about was the ability to store, index and retrieve my data. I'm sick and tired of query languages, constraints and limitations; of being forced to bend ideas backwards around hairy solutions to non-existing problems, just to gain basic persistence.
+fbls is an attempt at adding more degrees of freedom to the database paradigm, it's an itch I've been scratching for a while now. I'm all for standards as interfaces and theory as a starting point; but I'm drawing a line in the sand right here, the madness has to stop. All I ever really cared about was the ability to store, index and retrieve my data. I'm sick and tired of query languages, constraints and limitations; of being forced to bend ideas backwards around hairy solutions to someone else's problems, just to gain basic persistence.
 
 ## status
-fbls sits somewhere between crazy idea and working prototype at the moment. It represents my first major Julia project and I'm still feeling my way around the language. Basic testing is in place and all the examples in this document should work as advertised.
+fbls is currently catching it's breath somewhere between crazy idea and working prototype. It represents my first major Julia project and I'm still feeling my way around the language. Basic testing is in place and the examples in this document should work as advertised.
 
 ## future
 Transactions, indexing and encryption; most probably in that order.
