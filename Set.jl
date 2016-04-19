@@ -3,15 +3,28 @@ module Fbls
 import Base: cmp, show
 
 type SetNode{KeyT, ValT}
-    next::Union{Void, SetNode{KeyT, ValT}}
-    down::Union{Void, SetNode{KeyT, ValT}}
-    val::ValT
+    prev::SetNode{KeyT, ValT}
+    next::SetNode{KeyT, ValT}
+    down::SetNode{KeyT, ValT}
+    val
 
-    SetNode() = new(nothing, nothing)
+    SetNode() = begin
+        n = new()
+        n.val = nothing
+        n.prev = n
+        n.next = n
+        n.down = n
+        return n
+    end
     
-    SetNode(val::ValT,
-            next::Union{Void, SetNode{KeyT, ValT}},
-            down::Union{Void, SetNode{KeyT, ValT}}) = new(next, down, val)
+    SetNode(val::ValT, prev::SetNode{KeyT, ValT}) = begin
+        n = new()
+        n.val = val
+        n.prev = prev
+        n.next = prev.next
+        n.down = n
+        return n
+    end
 end
 
 immutable Set{KeyT, ValT}
@@ -31,45 +44,52 @@ end
 
 show{KeyT, ValT}(io::IO, s::Set{KeyT, ValT}) = begin
     n = s.root
-    while n.down != nothing n = n.down end
+    while n.down != n n = n.down end
     print(io, "[")
     n = n.next
     sep = ""
-    while n != nothing
+
+    while n.val != nothing
         print(io, sep, n.val)
         sep = ", "
         n = n.next
     end
+
     print(io, "]")
 end
 
 insert!{KeyT, ValT}(s::Set{KeyT, ValT}, key::KeyT, val::ValT) = begin
-    prev = s.root
+    n = s.root
+    pnn = nothing
 
-    nn = nothing
+    while true
+        n = n.next
 
-    while prev != nothing
-        n = prev.next
-
-        while n != nothing && s.cmp(key, n.val) > 0
-            prev = n
+        while n.val != nothing && s.cmp(key, n.val) > 0
             n = n.next
         end
 
-        if n != nothing && s.cmp(key, n.val) == 0 return false end
+        if n.val != nothing && s.cmp(key, n.val) == 0 return false end
 
-        nn = SetNode{KeyT, ValT}(val, prev, nn)
-        prev = prev.down
+        nn = SetNode{KeyT, ValT}(val, n.prev)
+        if pnn != nothing nn.down = pnn end
+        pnn = nn
+
+        if n.prev.down == n.prev 
+            break 
+        end
+
+        n = n.prev.down
     end
 
+    nn = pnn
     pnn = nothing
-    while nn != nothing
-        prev = nn.next
-        nn.next = prev.next
-        prev.next = nn
+    while nn != pnn
+        nn.prev.next = nn
+        nn.next.prev = nn
 
         up = nn.down
-        nn.down = pnn
+        nn.down = if pnn == nothing nn else pnn end
         pnn = nn
         nn = up
     end

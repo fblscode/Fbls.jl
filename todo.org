@@ -1,7 +1,21 @@
 * change Void to nothing in Fbls.jl
 
+* add Set.length
+
+* add show(io, SetNode)
+** change show(io, Set) to print top to bottom
+
+
+* rename Set.root to Set.top
+** add Set.bottom
+*** init in constructor
+** add first(Set) & last(Set)
+*** return bottom.next/prev.val
+
 * randomize node creation in Set.insert!
-** check godbase.Skip
+** add prob field
+*** divide by two in init loop
+*** multiply in insert loop
 
 * add multi param to Set.insert!
 ** skip early return
