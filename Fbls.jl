@@ -32,14 +32,6 @@ unsub!(evt::Evt, sub::EvtSub) = delete!(evt.subs, sub)
 push!{ArgsT}(evt::Evt{ArgsT}, args::ArgsT) =
     for sub in evt.subs sub(args...) end
 
-abstract Cx
-
-immutable BasicCx <: Cx
-    BasicCx() = new()
-end
-
-Cx() = BasicCx()
-
 abstract AnyCol
 
 typealias FldId UUID
@@ -111,9 +103,9 @@ recid(r::Rec) = r[idCol]
 end
 
 pushdep!(def, dep) = begin
-    sub!(ondelete(def), (id, cx) -> delete!(dep, id, cx))
-    sub!(onload(def), (rec, cx) -> load!(dep, rec, cx))
-    sub!(onupsert(def), (rec, cx) -> upsert!(dep, rec, cx))
+    sub!(ondelete(def), (id) -> delete!(dep, id))
+    sub!(onload(def), (rec) -> load!(dep, rec))
+    sub!(onupsert(def), (rec) -> upsert!(dep, rec))
 end
 
 abstract Revix{ValT}
@@ -124,15 +116,15 @@ immutable BasicRevix{ValT} <: Revix{ValT}
     name::Symbol
     col::Col{ValT}
     recs::RevixRecs{ValT}
-    ondelete::Evt{Tuple{RecId, Cx}} 
-    onload::Evt{Tuple{Rec, Cx}} 
-    onupsert::Evt{Tuple{Rec, Cx}} 
+    ondelete::Evt{Tuple{RecId}} 
+    onload::Evt{Tuple{Rec}} 
+    onupsert::Evt{Tuple{Rec}} 
 
     BasicRevix(n::Symbol, c::Col{ValT}) = new(n, c, 
                                               RevixRecs{ValT}(), 
-                                              Evt{Tuple{RecId, Cx}}(),
-                                              Evt{Tuple{Rec, Cx}}(),
-                                              Evt{Tuple{Rec, Cx}}())
+                                              Evt{Tuple{RecId}}(),
+                                              Evt{Tuple{Rec}}(),
+                                              Evt{Tuple{Rec}}())
 end
 
 Revix{ValT}(n::Symbol, c::Col{ValT}) = BasicRevix{ValT}(n, c)
@@ -141,27 +133,27 @@ defname(rx::Revix) = BasicRevix(rx).name
 
 empty!(rx::Revix) = empty!(BasicRevix(rx).recs)
 
-get{ValT}(rx::Revix{ValT}, id::RecId, cx::Cx) = BasicRevix{ValT}(rx).recs[id]
+get{ValT}(rx::Revix{ValT}, id::RecId) = BasicRevix{ValT}(rx).recs[id]
 
-haskey(rx::Revix, id::RecId, cx::Cx) = haskey(BasicRevix(rx).recs, id)
+haskey(rx::Revix, id::RecId) = haskey(BasicRevix(rx).recs, id)
 
-delete!(rx::Revix, id::RecId, cx::Cx) = begin
+delete!(rx::Revix, id::RecId) = begin
     brx = BasicRevix(rx)
-    if !haskey(rx, id, cx) throw(RecNotFound()) end
-    push!(brx.ondelete, (id, cx))
+    if !haskey(rx, id) throw(RecNotFound()) end
+    push!(brx.ondelete, (id,))
     delete!(brx.recs, id)
 end
 
-upsert!(rx::Revix, rec::Rec, cx::Cx) = begin
+upsert!(rx::Revix, rec::Rec) = begin
     brx = BasicRevix(rx)
-    push!(brx.onupsert, (rec, cx))
+    push!(brx.onupsert, (rec,))
     brx.recs[recid(rec)] = rec[brx.col]
     return rec
 end
 
-load!(rx::Revix, rec::Rec, cx::Cx) = begin
+load!(rx::Revix, rec::Rec) = begin
     brx = BasicRevix(rx)
-    push!(brx.onload, (rec, cx))
+    push!(brx.onload, (rec,))
     brx.recs[recid(rec)] = rec[brx.col]
     return rec
 end
@@ -185,7 +177,7 @@ dump(rx::Revix, out::IOBuf) = begin
     end
 end
 
-load!(rx::Revix, in::IOBuf, cx::Cx) = begin
+load!(rx::Revix, in::IOBuf) = begin
     brx = BasicRevix(rx)
 
     while !eof(in)
@@ -196,7 +188,7 @@ load!(rx::Revix, in::IOBuf, cx::Cx) = begin
         if s == -1
             delete!(brx.recs, id)
         else
-            brx.recs[id] = readval(brx.col, s, in, cx)
+            brx.recs[id] = readval(brx.col, s, in)
         end
     end
 end
@@ -216,15 +208,15 @@ convert(::Type{BasicRevix}, rx::IORevix) = BasicRevix(rx.wrapped)
 convert{ValT}(::Type{BasicRevix{ValT}}, rx::IORevix{ValT}) = 
     BasicRevix{ValT}(rx.wrapped)
 
-delete!(rx::IORevix, id::RecId, cx::Cx) = begin
-    delete!(rx.wrapped, id, cx)
+delete!(rx::IORevix, id::RecId) = begin
+    delete!(rx.wrapped, id)
     seekend(rx.buf)
     write(rx.buf, id.value)
     write(rx.buf, ValSize(-1)) 
 end
 
-upsert!(rx::IORevix, rec::Rec, cx::Cx) = begin
-    upsert!(rx.wrapped, rec, cx)
+upsert!(rx::IORevix, rec::Rec) = begin
+    upsert!(rx.wrapped, rec)
     seekend(rx.buf)
     write(rx.buf, recid(rec).value)
     col = BasicRevix(rx).col
@@ -243,9 +235,9 @@ immutable BasicTbl <: Tbl
     recs::TblRecs
     upsertedatCol::Col{DateTime}
     revCol::Col{Int64}
-    ondelete::Evt{Tuple{RecId, Cx}} 
-    onload::Evt{Tuple{Rec, Cx}} 
-    onupsert::Evt{Tuple{Rec, Cx}} 
+    ondelete::Evt{Tuple{RecId}} 
+    onload::Evt{Tuple{Rec}} 
+    onupsert::Evt{Tuple{Rec}} 
 
     BasicTbl(n::Symbol) = begin
         t = new(n, 
@@ -253,9 +245,9 @@ immutable BasicTbl <: Tbl
                 TblRecs(), 
                 BasicCol{DateTime}(symbol("($n)_upsertedat")), 
                 BasicCol{Int64}(symbol("$(n)_revision")),
-                Evt{Tuple{RecId, Cx}}(),
-                Evt{Tuple{Rec, Cx}}(),
-                Evt{Tuple{Rec, Cx}}())
+                Evt{Tuple{RecId}}(),
+                Evt{Tuple{Rec}}(),
+                Evt{Tuple{Rec}}())
         
         pushcol!(t, idCol, t.upsertedatCol, t.revCol)
         return t
@@ -279,20 +271,20 @@ findcol(tbl::Tbl, n::Symbol) = begin
     end
 end
 
-haskey(tbl::Tbl, id::RecId, cx::Cx) = haskey(BasicTbl(tbl).recs, id)
+haskey(tbl::Tbl, id::RecId) = haskey(BasicTbl(tbl).recs, id)
 
 upsertedat(rec::Rec, tbl::Tbl) = rec[BasicTbl(tbl).upsertedatCol]
 
 revision(rec::Rec, tbl::Tbl) = rec[BasicTbl(tbl).revCol]
 
-delete!(tbl::Tbl, id::RecId, cx::Cx) = begin
+delete!(tbl::Tbl, id::RecId) = begin
     bt = BasicTbl(tbl)
-    if !haskey(tbl, id, cx) throw(RecNotFound()) end
-    push!(bt.ondelete, (id, cx))
+    if !haskey(tbl, id) throw(RecNotFound()) end
+    push!(bt.ondelete, (id,))
     delete!(bt.recs, id)
 end
 
-get(tbl::Tbl, id::RecId, cx::Cx) = BasicTbl(tbl).recs[id]
+get(tbl::Tbl, id::RecId) = BasicTbl(tbl).recs[id]
 
 initrec!(rec) = begin
     if !haskey(rec, idCol)
@@ -313,19 +305,19 @@ initrec!(tbl::Tbl, rec::Rec) = begin
     return rec
 end
 
-upsert!(tbl::Tbl, rec::Rec, cx::Cx) = begin
+upsert!(tbl::Tbl, rec::Rec) = begin
     bt = BasicTbl(tbl)
     id = recid(rec)
     rec[bt.upsertedatCol] = now()
 
     prev = if id != Void && haskey(bt.recs, id) 
         rec[bt.revCol] += 1
-        push!(bt.onupsert, (rec, cx))
+        push!(bt.onupsert, (rec,))
         bt.recs[id]
     else 
         initrec!(bt, rec)
         id = recid(rec)
-        push!(bt.onupsert, (rec, cx))
+        push!(bt.onupsert, (rec,))
         bt.recs[id] = Rec() 
     end
 
@@ -348,15 +340,15 @@ isdirty(tbl::Tbl, rec::Rec, cols::AnyCol...) = begin
     return any(map((c) -> rec[c] != trec[c], cols))  
 end
 
-load!(tbl::Tbl, rec::Rec, cx::Cx) = begin
+load!(tbl::Tbl, rec::Rec) = begin
     bt = BasicTbl(tbl)
 
     if haskey(rec, isdelCol)
         id = recid(rec)
-        push!(bt.ondelete, (id, cx))
+        push!(bt.ondelete, (id,))
         delete!(bt.recs, id)
     else
-        push!(bt.onload, (rec, cx))
+        push!(bt.onload, (rec,))
         bt.recs[recid(rec)] = rec
     end
 
@@ -400,7 +392,7 @@ RefCol(n::Symbol, tbl::Tbl) = RefCol(BasicCol{RecId}(n), tbl)
 
 convert(::Type{BasicCol{RecId}}, col::RefCol) = BasicCol{RecId}(col.wrapped)
 
-getref(col::RefCol, rec::Rec, cx::Cx) = get(col.tbl, rec[col], cx)
+getref(col::RefCol, rec::Rec) = get(col.tbl, rec[col])
 
 typealias RecSize Int16
 typealias ColSize Int8
@@ -426,16 +418,13 @@ readval(t::Type{Rec}, s::ValSize, in::IOBuf) = readval(RecId, s, in)
 
 readval(t::Type{Str}, s::ValSize, in::IOBuf) = utf8(read(in, UInt8, s))
 
-readval(t::Type{UUID}, s::ValSize, in::IOBuf) =
-    RecId(read(in, UInt128))
+readval(t::Type{UUID}, s::ValSize, in::IOBuf) = RecId(read(in, UInt128))
 
-readval{ValT}(col::Col{ValT}, s::ValSize, in::IOBuf, cx::Cx) = 
-    readval(ValT, s, in)
+readval{ValT}(col::Col{ValT}, s::ValSize, in::IOBuf) = readval(ValT, s, in)
 
-readval(col::RecCol, s::ValSize, in::IOBuf, cx::Cx) = 
-    get(col.tbl, readval(Rec, s, in), cx)
+readval(col::RecCol, s::ValSize, in::IOBuf) = get(col.tbl, readval(Rec, s, in))
 
-readrec(tbl::Tbl, in::IOBuf, cx::Cx) = begin
+readrec(tbl::Tbl, in::IOBuf) = begin
     len = read(in, RecSize)
     rec = Rec()
     
@@ -448,7 +437,7 @@ readrec(tbl::Tbl, in::IOBuf, cx::Cx) = begin
             skip(in, s)
         else
             c = get(c)
-            rec[Fld(c)] = readval(c, s, in, cx)
+            rec[Fld(c)] = readval(c, s, in)
         end
     end
     
@@ -527,30 +516,30 @@ writerec(tbl::Tbl, rec::Rec) = begin
     writerec(iot, rec, iot.buf)
 end
 
-delete!(tbl::IOTbl, id::RecId, cx::Cx) = begin
-    delete!(tbl.wrapped, id, cx)
+delete!(tbl::IOTbl, id::RecId) = begin
+    delete!(tbl.wrapped, id)
     writerec(tbl, RecOf(idCol => id, isdelCol => true))
 end
 
-get(tbl::IOTbl, idx::Revix{Offs}, id::RecId, cx::Cx) = begin
-    if haskey(tbl.wrapped, id, cx)
-        return get(tbl.wrapped, id, cx)
-    elseif haskey(idx, id, cx)
-        seek(tbl.buf, get(idx, id, cx))
-        return load!(tbl, readrec(tbl, tbl.buf, cx), cx)
+get(tbl::IOTbl, idx::Revix{Offs}, id::RecId) = begin
+    if haskey(tbl.wrapped, id)
+        return get(tbl.wrapped, id)
+    elseif haskey(idx, id)
+        seek(tbl.buf, get(idx, id))
+        return load!(tbl, readrec(tbl, tbl.buf))
     end
 
     throw(RecNotFound())
 end
 
-upsert!(tbl::IOTbl, rec::Rec, cx::Cx) = begin
+upsert!(tbl::IOTbl, rec::Rec) = begin
     if !haskey(rec, tbl.offsCol)
         rec[tbl.offsCol] = -1
     end
 
     rec[tbl.prevoffsCol] = rec[tbl.offsCol]
     rec[tbl.offsCol] = position(tbl.buf)
-    res = upsert!(tbl.wrapped, rec, cx)
+    res = upsert!(tbl.wrapped, rec)
     writerec(tbl, rec)
 
     return res
@@ -565,19 +554,18 @@ dump(tbl::Tbl, out::IOBuf) = begin
     end
 end
 
-load!(tbl::Tbl, in::IOBuf, cx::Cx) = begin
+load!(tbl::Tbl, in::IOBuf) = begin
     while !eof(in)
-        load!(tbl, readrec(tbl, in, cx), cx)
+        load!(tbl, readrec(tbl, in))
     end
 end
 
 testTblBasics() = begin
-    cx = Cx()
     t = Tbl(:foos)
     @assert isempty(t)
     @assert length(t) == 0
 
-    r = upsert!(t, Rec(), cx)
+    r = upsert!(t, Rec())
     @assert !isempty(t)
     @assert length(t) == 1
 
@@ -587,7 +575,7 @@ testTblBasics() = begin
     rupsertedat = upsertedat(r, t)
     @assert rupsertedat != Void
 
-    upsert!(t, r, cx)
+    upsert!(t, r)
     @assert !isempty(t)
     @assert length(t) == 1
     @assert recid(r) == rid
@@ -596,18 +584,16 @@ testTblBasics() = begin
 end
 
 testGet() = begin
-    cx = Cx()
     t = Tbl(:foos)
-    r = upsert!(t, Rec(), cx)
-    gr = get(t, recid(r), cx)
+    r = upsert!(t, Rec())
+    gr = get(t, recid(r))
 
     @assert gr == r
 end
 
 testIOTblBasics() = begin
-    cx = Cx()
     t = IO(Tbl(:foos), TempBuf())
-    r = upsert!(t, Rec(), cx)
+    r = upsert!(t, Rec())
     @assert recid(r) != Void
     @assert revision(r, t) == 1
     @assert upsertedat(r, t) != Void
@@ -616,7 +602,7 @@ testIOTblBasics() = begin
     @assert roffs > -1
     @assert prevoffs(r, t) == -1
 
-    upsert!(t, r, cx)
+    upsert!(t, r)
     @assert offs(r, t) > roffs
     @assert prevoffs(r, t) == roffs
 end
@@ -636,7 +622,6 @@ testRecBasics() = begin
 end
 
 testTempCol() = begin
-    cx = Cx()
     t = Tbl(:foo)
     c = BasicCol{Str}(:bar)
     tc = Temp(c)
@@ -649,15 +634,14 @@ testTempCol() = begin
     buf = TempBuf()
     writerec(t, r, buf)
     seekstart(buf)
-    rr = readrec(t, buf, cx)
+    rr = readrec(t, buf)
     @assert !haskey(rr, tc)
 end
 
 testRecCol() = begin
-    cx = Cx()
     t = Tbl(:foos)
     c = RecCol(:foo, t)
-    foo = upsert!(t, Rec(), cx)
+    foo = upsert!(t, Rec())
     
     r = Rec()
     r[c] = foo
@@ -665,41 +649,38 @@ testRecCol() = begin
 end
 
 testRefCol() = begin
-    cx = Cx()
     t = Tbl(:foos)
     c = RefCol(:foo, t)
-    foo = upsert!(t, Rec(), cx)
+    foo = upsert!(t, Rec())
     
     r = Rec()
     r[c] = recid(foo)
-    @assert getref(c, r, cx) == foo
+    @assert getref(c, r) == foo
 end
 
 testReadWriteRec() = begin
-    cx = Cx()
     t = Tbl(:foos)
     c = BasicCol{Str}(:bar)
     pushcol!(t, c)
 
     r = Rec()
     r[c] = "abc"
-    upsert!(t, r, cx)
+    upsert!(t, r)
     
     buf = TempBuf()
     writerec(t, r, buf)
     seekstart(buf)
-    rr = readrec(t, buf, cx)
+    rr = readrec(t, buf)
     @assert rr[c] == r[c]
 end
 
 testReadWriteRecCol() = begin
-    cx = Cx()
     foos = Tbl(:foos)
     bars = Tbl(:bars)
     barFoo = RecCol(:foo, foos)
     pushcol!(bars, barFoo)
 
-    foo = upsert!(foos, Rec(), cx)
+    foo = upsert!(foos, Rec())
     
     bar = Rec()
     bar[barFoo] = foo
@@ -707,7 +688,7 @@ testReadWriteRecCol() = begin
     buf = TempBuf()
     writerec(bars, bar, buf)
     seekstart(buf)
-    rbar = readrec(bars, buf, cx)
+    rbar = readrec(bars, buf)
     @assert rbar[barFoo] == foo
 end
 
@@ -721,53 +702,48 @@ testAliasCol() = begin
 end
 
 testEmptyTbl() = begin
-    cx = Cx()
     t = Tbl(:foos)
-    r = upsert!(t, Rec(), cx)
+    r = upsert!(t, Rec())
     empty!(t)
 
-    @assert !haskey(t, recid(r), cx)
+    @assert !haskey(t, recid(r))
 end
 
 testDumpLoad() = begin
-    cx = Cx()
     t = Tbl(:foos)
-    r = upsert!(t, Rec(), cx)
+    r = upsert!(t, Rec())
     buf = TempBuf()
     dump(t, buf)
     empty!(t)
     seekstart(buf)
-    load!(t, buf, cx)
+    load!(t, buf)
 
-    @assert get(t, recid(r), cx) == r
+    @assert get(t, recid(r)) == r
 end
 
 testDelete() = begin
-    cx = Cx()
     t = Tbl(:foos)
-    r = upsert!(t, Rec(), cx)
+    r = upsert!(t, Rec())
     id = recid(r)
-    delete!(t, id, cx)
+    delete!(t, id)
 
-    @assert !haskey(t, id, cx)
+    @assert !haskey(t, id)
 end
 
 testIODelete() = begin
-    cx = Cx()
     buf = TempBuf()
     t = IO(Tbl(:foos), buf)
-    r = upsert!(t, Rec(), cx)
+    r = upsert!(t, Rec())
     id = recid(r)
-    delete!(t, id, cx)
+    delete!(t, id)
     empty!(t)
     seekstart(buf)
-    load!(t, buf, cx)
+    load!(t, buf)
 
-    @assert !haskey(t, id, cx)
+    @assert !haskey(t, id)
 end
 
 testIsdirty() = begin
-    cx = Cx()
     t = Tbl(:foobars)
     foo = BasicCol{Str}(:foo)
     bar = BasicCol{Str}(:bar)
@@ -777,29 +753,27 @@ testIsdirty() = begin
     @assert isdirty(t, r)
     @assert isdirty(t, r, foo, bar)
 
-    upsert!(t, r, cx)
+    upsert!(t, r)
     @assert !isdirty(t, r, foo, bar)
 
     r[foo] = "ghi"
     @assert !isdirty(t, r, bar)
     @assert isdirty(t, r, foo)
 
-    upsert!(t, r, cx)
+    upsert!(t, r)
     @assert !isdirty(t, r, foo, bar)    
 end
 
 testOnupsert() = begin
-    cx = Cx()
     t = Tbl(:foos)
     rec = Rec()
     wascalled = false
-    sub!(onupsert(t), (r, cx) -> (@assert r == rec; wascalled = true))
-    upsert!(t, rec, cx)
+    sub!(onupsert(t), (r) -> (@assert r == rec; wascalled = true))
+    upsert!(t, rec)
     @assert wascalled
 end
 
 testRevix() = begin
-    cx = Cx()
     buf = TempBuf()
     tbl = IO(Tbl(:foo), buf)
     rx = Revix(:foo_offs, tbl.offsCol) 
@@ -807,54 +781,52 @@ testRevix() = begin
     @assert length(rx) == 0
 
     pushdep!(tbl, rx)
-    rec = upsert!(tbl, Rec(), cx)
+    rec = upsert!(tbl, Rec())
     id = recid(rec)
-    @assert haskey(rx, id, cx)
+    @assert haskey(rx, id)
     @assert !isempty(rx)
     @assert length(rx) == 1
-    @assert get(rx, id, cx) == offs(rec, tbl)
+    @assert get(rx, id) == offs(rec, tbl)
     
     empty!(tbl)
-    @assert get(tbl, rx, id, cx) == rec
+    @assert get(tbl, rx, id) == rec
 
-    delete!(tbl, id, cx)
+    delete!(tbl, id)
     @assert isempty(rx)
     @assert length(rx) == 0
-    @assert !haskey(rx, id, cx)
+    @assert !haskey(rx, id)
 end
 
 testDumpLoadRevix() = begin
-    cx = Cx()
     c = BasicCol{Str}(:foo)
     rx = Revix(:foos, c)
-    r = upsert!(rx, initrec!(RecOf(c => "abc")), cx)
+    r = upsert!(rx, initrec!(RecOf(c => "abc")))
     
     buf = TempBuf()
     dump(rx, buf)
     empty!(rx)
     seekstart(buf)
-    load!(rx, buf, cx)
+    load!(rx, buf)
 
-    @assert get(rx, recid(r), cx) == "abc"
+    @assert get(rx, recid(r)) == "abc"
 end
 
 testIORevix() = begin
-    cx = Cx()
     c = BasicCol{Str}(:foo)
     buf = TempBuf()
     rx = IO(Revix(:foos, c), buf)
-    rec = upsert!(rx, initrec!(RecOf(c => "abc")), cx)
+    rec = upsert!(rx, initrec!(RecOf(c => "abc")))
     id = recid(rec)
 
     empty!(rx)
     seekstart(buf)
-    load!(rx, buf, cx)    
-    @assert get(rx, id, cx) == "abc"
+    load!(rx, buf)    
+    @assert get(rx, id) == "abc"
 
-    delete!(rx, id, cx)
+    delete!(rx, id)
     seekstart(buf)
-    load!(rx, buf, cx)
-    @assert !haskey(rx, id, cx)
+    load!(rx, buf)
+    @assert !haskey(rx, id)
 end
 
 testAll() = begin
