@@ -189,7 +189,6 @@ load!(rx::Revix, in::IOBuf) = begin
 
     while !eof(in)
         id = readval(UUID, -1, in)
-
         s = readsize(in)
 
         if s == -1
@@ -271,6 +270,7 @@ empty!(tbl::Tbl) = empty!(BasicTbl(tbl).recs)
 
 findcol(tbl::Tbl, n::Symbol) = begin
     bt = BasicTbl(tbl)
+
     return if haskey(bt.cols, n) 
         Nullable{AnyCol}(bt.cols[n]) 
     else 
@@ -497,8 +497,7 @@ immutable IOTbl <: Tbl
     prevoffs::Col{Offs}
     
     IOTbl(tbl::Tbl, buf::IOBuf, offs::Col{Offs}) = begin
-        t = new(tbl, buf, offs, 
-                Col(Offs, symbol("$(defname(tbl))_prevoffs")))
+        t = new(tbl, buf, offs, Col(Offs, symbol("$(defname(tbl))_prevoffs")))
 
         pushcol!(tbl, isdelCol, t.offs, t.prevoffs)
 
@@ -536,10 +535,7 @@ get(tbl::IOTbl, idx::Revix{Offs}, id::RecId) = begin
 end
 
 upsert!(tbl::IOTbl, rec::Rec) = begin
-    if !haskey(rec, tbl.offs)
-        rec[tbl.offs] = -1
-    end
-
+    if !haskey(rec, tbl.offs) rec[tbl.offs] = -1 end
     rec[tbl.prevoffs] = rec[tbl.offs]
     rec[tbl.offs] = position(tbl.buf)
     res = upsert!(tbl.wrapped, rec)
@@ -551,17 +547,9 @@ end
 offs(tbl::Tbl) = IOTbl(tbl).offs
 prevoffs(tbl::Tbl) = IOTbl(tbl).prevoffs
 
-dump(tbl::Tbl, out::IOBuf) = begin
-    for r in tbl
-        writerec(tbl, r, out)
-    end
-end
+dump(tbl::Tbl, out::IOBuf) = for r in tbl writerec(tbl, r, out) end
 
-load!(tbl::Tbl, in::IOBuf) = begin
-    while !eof(in)
-        load!(tbl, readrec(tbl, in))
-    end
-end
+load!(tbl::Tbl, in::IOBuf) = while !eof(in) load!(tbl, readrec(tbl, in)) end
 
 testTblBasics() = begin
     t = Tbl(:foos)
