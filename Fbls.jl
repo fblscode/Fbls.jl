@@ -343,7 +343,7 @@ isdirty(rec::Rec, tbl::Tbl, cols::AnyCol...) = begin
     if !haskey(bt.recs, rid) return true end
     trec = bt.recs[rid]
     if isempty(cols) cols = bt.cols end
-    return any(map((c) -> rec[c] != trec[c], cols))  
+    return reduce(|, [get(rec, c, Void) != get(trec, c, Void) for c in cols])  
 end
 
 load!(tbl::Tbl, rec::Rec) = begin

@@ -4,8 +4,8 @@
 ```julia
 
 import Base: IOBuffer, seekstart
-import Fbls: BasicCol, Col, RecCol, RecOf, Tbl, dump, get, haskey, upsert!, 
-isempty, length, load!, pushcol!, recid
+import Fbls: BasicCol, Col, RecCol, RecOf, Tbl, dump, get, haskey, isdirty, 
+isempty, length, load!, pushcol!, recid, revision, upsert!
 
 runExample1() = begin
     bars = Tbl(:bars)
@@ -34,6 +34,19 @@ runExample1() = begin
 
     # Records are really just Dicts mapping fields to values
     @assert frec[foobar] == brec
+
+    brec[bar] = 43
+
+    # isdirty() returns true if any specified column has been modified
+    @assert isdirty(brec, bars, bar)
+
+    upsert!(bars, brec)
+
+    # calling isdirty() without specifying columns checks all columns in tbl
+    @assert !isdirty(brec, bars)
+
+    # record revision is increased on each upsert!
+    @assert revision(brec, bars) == 2
 
     # Tables can be dumped to and loaded from any IO stream
     buf = IOBuffer()
