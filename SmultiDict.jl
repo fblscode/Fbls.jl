@@ -1,6 +1,6 @@
 module Fbls
 
-import Base: isless, show
+import Base: empty!, getindex, isempty, isless, length, setindex, show
 
 type SmultiNode{KeyT, ValT}
     prev::SmultiNode{KeyT, ValT}
@@ -51,7 +51,8 @@ end
 first{KeyT, ValT}(d::SmultiDict{KeyT, ValT}) = d.bottom.next.kv
 last{KeyT, ValT}(d::SmultiDict{KeyT, ValT}) = d.bottom.prev.kv
 
-insert!{KeyT, ValT}(d::SmultiDict{KeyT, ValT}, key::KeyT, val::ValT) = begin
+insert!{KeyT, ValT}(d::SmultiDict{KeyT, ValT}, key::KeyT, val::ValT; 
+                    multi=false, update=false) = begin
     n = d.top
     pnn = nothing
 
@@ -62,8 +63,8 @@ insert!{KeyT, ValT}(d::SmultiDict{KeyT, ValT}, key::KeyT, val::ValT) = begin
             n = n.next
         end
 
-        if n.kv != nothing && n.kv.first == key 
-            n.kv = Pair{KeyT, ValT}(key, val)
+        if !multi && n.kv != nothing && n.kv.first == key 
+            if update n.kv = Pair{KeyT, ValT}(key, val) end
             return false 
         end
 
@@ -93,6 +94,9 @@ insert!{KeyT, ValT}(d::SmultiDict{KeyT, ValT}, key::KeyT, val::ValT) = begin
     d.length += 1
     return true
 end
+
+setindex!{KeyT, ValT}(d::SmultiDict{KeyT, ValT}, val::ValT, key::KeyT) =
+    insert(d, key, val, update=true)
 
 show{KeyT, ValT}(io::IO, n::SmultiNode{KeyT, ValT}) = begin
     print(io, "[")

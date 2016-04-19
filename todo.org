@@ -8,10 +8,7 @@
 *** divide by two in init loop
 *** multiply in insert loop    
 
-* add multi param to Set.insert!
-** skip early return
-
-* add setindex!/getindex support
+* add getindex overload
 
 * implement Set.delete!
 ** loop while match, opt val param
