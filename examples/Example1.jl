@@ -34,6 +34,8 @@ runExample1() = begin
     # Records are really just Dicts mapping fields to values
     @assert frec[foobar] == brec
 
+    
+
     # Tables can be dumped to and loaded from any IO stream
     buf = IOBuffer()
     dump(foos, buf)

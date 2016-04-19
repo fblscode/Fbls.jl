@@ -336,7 +336,7 @@ upsert!(tbl::Tbl, rec::Rec) = begin
     return rec
 end
 
-isdirty(tbl::Tbl, rec::Rec, cols::AnyCol...) = begin
+isdirty(rec::Rec, tbl::Tbl, cols::AnyCol...) = begin
     bt = BasicTbl(tbl)
     if !haskey(rec, idCol) return true end
     rid = recid(rec)
@@ -751,18 +751,18 @@ testIsdirty() = begin
     pushcol!(t, foo, bar)
 
     r = RecOf(foo => "abc", bar => "def")
-    @assert isdirty(t, r)
-    @assert isdirty(t, r, foo, bar)
+    @assert isdirty(r, t)
+    @assert isdirty(r, t, foo, bar)
 
     upsert!(t, r)
-    @assert !isdirty(t, r, foo, bar)
+    @assert !isdirty(r, t, foo, bar)
 
     r[foo] = "ghi"
-    @assert !isdirty(t, r, bar)
-    @assert isdirty(t, r, foo)
+    @assert !isdirty(r, t, bar)
+    @assert isdirty(r, t, foo)
 
     upsert!(t, r)
-    @assert !isdirty(t, r, foo, bar)    
+    @assert !isdirty(r, t, foo, bar)    
 end
 
 testOnupsert() = begin
