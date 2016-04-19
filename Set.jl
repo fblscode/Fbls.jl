@@ -21,7 +21,7 @@ immutable Set{KeyT, ValT}
     Set(levels::Int;cmp=Base.cmp) = begin
         s = new(cmp, SetNode{KeyT, ValT}())
         n = s.root
-        for i in 1:levels-1 
+        for i in 1:levels-1
             n.down = SetNode{KeyT, ValT}() 
             n = n.down
         end
@@ -32,14 +32,15 @@ end
 show{KeyT, ValT}(io::IO, s::Set{KeyT, ValT}) = begin
     n = s.root
     while n.down != nothing n = n.down end
-    print("[")
+    print(io, "[")
     n = n.next
     sep = ""
     while n != nothing
-        print(sep, n.val)
+        print(io, sep, n.val)
         sep = ", "
+        n = n.next
     end
-    print("]")
+    print(io, "]")
 end
 
 insert!{KeyT, ValT}(s::Set{KeyT, ValT}, key::KeyT, val::ValT) = begin
@@ -48,9 +49,9 @@ insert!{KeyT, ValT}(s::Set{KeyT, ValT}, key::KeyT, val::ValT) = begin
     nn = nothing
 
     while prev != nothing
-        n = prev
+        n = prev.next
 
-        while n != nothing && s.cmp(key, n.val) < 0
+        while n != nothing && s.cmp(key, n.val) > 0
             prev = n
             n = n.next
         end
@@ -78,11 +79,11 @@ end
 
 testSet() = begin
     s = Set{Int, Int}(8)
-    println("set: $s")
-
     insert!(s, 1, 1)
     insert!(s, 3, 3)
     insert!(s, 2, 2)
+    insert!(s, 5, 5)
+    insert!(s, 4, 4)
     println("set: $s")
 end
 

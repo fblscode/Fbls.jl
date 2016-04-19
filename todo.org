@@ -1,4 +1,13 @@
-* change Void to nothing
+* change Void to nothing in Fbls.jl
+
+* randomize node creation in Set.insert!
+** check godbase.Skip
+
+* implement Set.find
+
+* implement Set.delete!
+
+* implement Set.rangewhile
 
 * add trans support
 * add HashUnix
