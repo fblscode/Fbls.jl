@@ -1,3 +1,5 @@
+* change Void to nothing
+
 * add trans support
 * add HashUnix
 ** use tuple keys
