@@ -1,18 +1,3 @@
-* add show(io, SetNode)
-** change show(io, Set) to print top to bottom
-
-* add separate SetNode.key field
-** use for all comparisons
-** change insert! to update val on perfect match
-
-* add Set.length
-
-* rename Set.root to Set.top
-** add Set.bottom
-*** init in constructor
-** add first(Set) & last(Set)
-*** return bottom.next/prev.val
-
 * randomize node creation in Set.insert!
 ** add prob field
 *** divide by two in init loop
@@ -21,15 +6,15 @@
 * add multi param to Set.insert!
 ** skip early return
 
-* change Void to nothing in Fbls.jl
-
-* implement Set.find
+* add setindex!/getindex support
 
 * implement Set.delete!
-** loop while match
+** loop while match, opt val param
 
-* implement Set.rangewhile
-** check godbase set interface
+* change Void to nothing in Fbls.jl
+
+* implement Set.range
+** return iterator
 
 * add trans support
 * add HashUnix

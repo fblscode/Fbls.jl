@@ -6,13 +6,11 @@ type SmultiNode{KeyT, ValT}
     prev::SmultiNode{KeyT, ValT}
     next::SmultiNode{KeyT, ValT}
     down::SmultiNode{KeyT, ValT}
-    key
-    val
+    kv
 
     SmultiNode() = begin
         n = new()
-        n.key = nothing
-        n.val = nothing
+        n.kv = nothing
         n.prev = n
         n.next = n
         n.down = n
@@ -21,8 +19,7 @@ type SmultiNode{KeyT, ValT}
     
     SmultiNode(key::KeyT, val::ValT, prev::SmultiNode{KeyT, ValT}) = begin
         n = new()
-        n.key = key
-        n.val = val
+        n.kv = Pair{KeyT, ValT}(key, val)
         n.prev = prev
         n.next = prev.next
         n.down = n
@@ -30,50 +27,43 @@ type SmultiNode{KeyT, ValT}
     end
 end
 
-immutable SmultiDict{KeyT, ValT}
-    root::SmultiNode{KeyT, ValT}
+type SmultiDict{KeyT, ValT}
+    top::SmultiNode{KeyT, ValT}
+    bottom::SmultiNode{KeyT, ValT}
+    length::Int
 
     SmultiDict(levels::Int) = begin
-        s = new(SmultiNode{KeyT, ValT}())
-        n = s.root
+        d = new()
+        d.top = SmultiNode{KeyT, ValT}()
+        n = d.top
+
         for i in 1:levels-1
             n.down = SmultiNode{KeyT, ValT}() 
             n = n.down
         end
-        return s
+
+        d.bottom = n
+        d.length = 0
+        return d
     end
 end
 
-show{KeyT, ValT}(io::IO, s::SmultiDict{KeyT, ValT}) = begin
-    n = s.root
-    while n.down != n n = n.down end
-    print(io, "[")
-    n = n.next
-    sep = ""
+first{KeyT, ValT}(d::SmultiDict{KeyT, ValT}) = d.bottom.next.kv
+last{KeyT, ValT}(d::SmultiDict{KeyT, ValT}) = d.bottom.prev.kv
 
-    while n.key != nothing
-        print(io, sep, n.key)
-        if n.val != nothing print(io, ":", n.val) end
-        sep = ", "
-        n = n.next
-    end
-
-    print(io, "]")
-end
-
-insert!{KeyT, ValT}(s::SmultiDict{KeyT, ValT}, key::KeyT, val::ValT) = begin
-    n = s.root
+insert!{KeyT, ValT}(d::SmultiDict{KeyT, ValT}, key::KeyT, val::ValT) = begin
+    n = d.top
     pnn = nothing
 
     while true
         n = n.next
 
-        while n.key != nothing && isless(n.key, key)
+        while n.kv != nothing && isless(n.kv.first, key)
             n = n.next
         end
 
-        if n.key == key 
-            n.val = val
+        if n.kv != nothing && n.kv.first == key 
+            n.kv = Pair{KeyT, ValT}(key, val)
             return false 
         end
 
@@ -100,17 +90,53 @@ insert!{KeyT, ValT}(s::SmultiDict{KeyT, ValT}, key::KeyT, val::ValT) = begin
         nn = up
     end
 
+    d.length += 1
     return true
 end
 
-testSmultiDict() = begin
-    s = SmultiDict{Int, Void}(8)
-    insert!(s, 1, nothing)
-    insert!(s, 3, nothing)
-    insert!(s, 2, nothing)
-    insert!(s, 5, nothing)
-    insert!(s, 4, nothing)
-    println("set: $s")
+show{KeyT, ValT}(io::IO, n::SmultiNode{KeyT, ValT}) = begin
+    print(io, "[")
+    n = n.next
+    sep = ""
+
+    while n.kv != nothing
+        print(io, sep, n.kv.first)
+        if n.kv.second != nothing print(io, ":", n.kv.second) end
+        sep = ", "
+        n = n.next
+    end
+
+    print(io, "]")
+end
+
+show{KeyT, ValT}(io::IO, d::SmultiDict{KeyT, ValT}) = begin
+    n = d.top
+    pn = nothing
+
+    while n != pn 
+        show(io, n)
+        println(io)
+        pn = n
+        n = n.down 
+    end
+end
+
+testSmultiBasics() = begin
+    d = SmultiDict{Int, Void}(8)
+    insert!(d, 1, nothing)
+    insert!(d, 3, nothing)
+    insert!(d, 2, nothing)
+    insert!(d, 5, nothing)
+    insert!(d, 4, nothing)
+
+    print(d)
+
+    @assert first(d).first == 1
+    @assert last(d).first == 5
+end
+
+testSmulti() = begin
+    testSmultiBasics()
 end
 
 end
