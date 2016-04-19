@@ -11,7 +11,7 @@ runExample1() = begin
     bars = Tbl(:bars)
     bar = Col(Int, :bar)
 
-    # Columns are added to tables using pushcol!
+    # Columns are added to tables using pushcol!()
     pushcol!(bars, bar)
 
     foos = Tbl(:foos)
@@ -42,10 +42,10 @@ runExample1() = begin
 
     upsert!(bars, brec)
 
-    # calling isdirty() without specifying columns checks all columns in table
+    # Calling isdirty() without specifying columns checks all columns in table
     @assert !isdirty(brec, bars)
 
-    # record revision is increased on each upsert!
+    # Record revision is increased on each upsert
     @assert brec[revision(bars)] == 2
 
     # Tables can be dumped to and loaded from any IO stream
@@ -82,7 +82,7 @@ Tables map globally unique ids to records. Each table contains a set of columns 
 A reverse index maps record ids to values for a specific column. Combining a reverse offset index with an IO table is a nice trick to enable lazy loading of records.
 
 ## events
-Tables and indexes have delete, load and upsert events that can be hooked into. Events are triggered before the triggering action is carried out, which allows for accessing previous state and validating new data. pushdep! is provided as a shortcut to hook into all events.
+Tables and indexes have delete, load and upsert events that can be hooked into. Events are triggered before the triggering action is carried out, which allows for accessing previous state and validating new data. pushdep!() is provided as a shortcut to hook into all events.
 
 ## wrap on, wrap off
 Fbls uses wrapping extensively to enable arbitrary combinations of functionality. Any table can be wrapped by an IO table to add stream logging, any number of layers can be wrapped on top; and all the pieces are still accessible in their original state, the initial table reference still knows nothing about IO. Any column can be made temporary, the same column can even be temporary in one table and persistent in another.
@@ -112,11 +112,11 @@ runExample2() = begin
     # Just checking to make sure the offset made it all the way
     @assert get(rix, rec[recid]) == rec[offs(tbl)]
 
-    # Drop all records from tbl and reload via offset index
+    # Drop all records from table and reload via offset index
     empty!(tbl)
     @assert get(tbl, rix, rec[recid])[col] == "abc"
 
-    # Deletes are also logged
+    # Deletes are also logged to stream
     delete!(tbl, rec[recid])
     empty!(tbl)
     seekstart(out)

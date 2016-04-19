@@ -10,7 +10,7 @@ runExample1() = begin
     bars = Tbl(:bars)
     bar = Col(Int, :bar)
 
-    # Columns are added to tables using pushcol!
+    # Columns are added to tables using pushcol!()
     pushcol!(bars, bar)
 
     foos = Tbl(:foos)
@@ -41,10 +41,10 @@ runExample1() = begin
 
     upsert!(bars, brec)
 
-    # calling isdirty() without specifying columns checks all columns in table
+    # Calling isdirty() without specifying columns checks all columns in table
     @assert !isdirty(brec, bars)
 
-    # record revision is increased on each upsert!
+    # Record revision is increased on each upsert
     @assert brec[revision(bars)] == 2
 
     # Tables can be dumped to and loaded from any IO stream
