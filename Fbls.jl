@@ -15,8 +15,6 @@ type RecNotFound <: Err end
 
 TempBuf() = IOBuffer()
 
-abstract Cx
-
 typealias EvtSub Function
 typealias EvtSubs Vec{EvtSub}
 
@@ -33,6 +31,8 @@ unsub!(evt::Evt, sub::EvtSub) = delete!(evt.subs, sub)
 
 push!{ArgsT}(evt::Evt{ArgsT}, args::ArgsT) =
     for sub in evt.subs sub(args...) end
+
+abstract Cx
 
 immutable BasicCx <: Cx
     BasicCx() = new()
