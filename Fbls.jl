@@ -57,7 +57,9 @@ delete!{ValT}(r::Rec, c::Col{ValT}) = delete!(r, Fld(c))
 
 haskey{ValT}(r::Rec, c::Col{ValT}) = haskey(r, Fld(c))
 
-getindex{ValT}(r::Rec, c::Col{ValT}) = if haskey(r, c) getindex(r, Fld(c)) else Void end
+getindex{ValT}(r::Rec, c::Col{ValT}) = getindex(r, Fld(c))
+
+get{ValT}(r::Rec, c::Col{ValT}, default) = get(r, Fld(c), default)
 
 setindex!{ValT}(r::Rec, v::ValT, c::Col{ValT}) = setindex!(r, v, Fld(c))
 
@@ -99,8 +101,8 @@ isdelCol = Col(Bool, :fbls_isdel)
 recid(r::Rec) = r[idCol]
 
 ==(l::Rec, r::Rec) = begin
-    lid = recid(l)
-    rid = recid(r)
+    lid = get(l, idCol, Void)
+    rid = get(r, idCol, Void)
 
     return lid != Void && rid != Void && lid == rid
 end
@@ -237,7 +239,7 @@ immutable BasicTbl <: Tbl
     cols::TblCols
     recs::TblRecs
     upsertedatCol::Col{DateTime}
-    revCol::Col{Int64}
+    revisionCol::Col{Int64}
     ondelete::Evt{Tuple{RecId}} 
     onload::Evt{Tuple{Rec}} 
     onupsert::Evt{Tuple{Rec}} 
@@ -252,7 +254,7 @@ immutable BasicTbl <: Tbl
                 Evt{Tuple{Rec}}(),
                 Evt{Tuple{Rec}}())
         
-        pushcol!(t, idCol, t.upsertedatCol, t.revCol)
+        pushcol!(t, idCol, t.upsertedatCol, t.revisionCol)
         return t
     end
 end
@@ -278,7 +280,7 @@ haskey(tbl::Tbl, id::RecId) = haskey(BasicTbl(tbl).recs, id)
 
 upsertedat(rec::Rec, tbl::Tbl) = rec[BasicTbl(tbl).upsertedatCol]
 
-revision(rec::Rec, tbl::Tbl) = rec[BasicTbl(tbl).revCol]
+revision(rec::Rec, tbl::Tbl) = rec[BasicTbl(tbl).revisionCol]
 
 delete!(tbl::Tbl, id::RecId) = begin
     bt = BasicTbl(tbl)
@@ -301,8 +303,8 @@ initrec!(tbl::Tbl, rec::Rec) = begin
     initrec!(rec)
     bt = BasicTbl(tbl)
 
-    if !haskey(rec, bt.revCol)
-        rec[bt.revCol] = 1
+    if !haskey(rec, bt.revisionCol)
+        rec[bt.revisionCol] = 1
     end
 
     return rec
@@ -310,11 +312,11 @@ end
 
 upsert!(tbl::Tbl, rec::Rec) = begin
     bt = BasicTbl(tbl)
-    id = recid(rec)
+    id = get(rec, idCol, Void)
     rec[bt.upsertedatCol] = now()
 
     prev = if id != Void && haskey(bt.recs, id) 
-        rec[bt.revCol] += 1
+        rec[bt.revisionCol] += 1
         push!(bt.onupsert, (rec,))
         bt.recs[id]
     else 
@@ -336,6 +338,7 @@ end
 
 isdirty(tbl::Tbl, rec::Rec, cols::AnyCol...) = begin
     bt = BasicTbl(tbl)
+    if !haskey(rec, idCol) return true end
     rid = recid(rec)
     if !haskey(bt.recs, rid) return true end
     trec = bt.recs[rid]
@@ -572,10 +575,8 @@ testTblBasics() = begin
     @assert length(t) == 1
 
     rid = recid(r)
-    @assert rid != Void
     @assert revision(r, t) == 1
     rupsertedat = upsertedat(r, t)
-    @assert rupsertedat != Void
 
     upsert!(t, r)
     @assert !isempty(t)
@@ -596,9 +597,7 @@ end
 testIOTblBasics() = begin
     t = IO(Tbl(:foos), TempBuf())
     r = upsert!(t, Rec())
-    @assert recid(r) != Void
     @assert revision(r, t) == 1
-    @assert upsertedat(r, t) != Void
     
     roffs = offs(r, t)
     @assert roffs > -1
@@ -612,7 +611,7 @@ end
 testRecBasics() = begin
     r = Rec()
     c = Col(Str, :foo)
-    @assert r[c] == Void
+    @assert !haskey(r, c)
     
     r[c] = "abc"
     r[c] = "def"
