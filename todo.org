@@ -1,10 +1,11 @@
-* change Void to nothing in Fbls.jl
-
-* add Set.length
-
 * add show(io, SetNode)
 ** change show(io, Set) to print top to bottom
 
+* add separate SetNode.key field
+** use for all comparisons
+** change insert! to update val on perfect match
+
+* add Set.length
 
 * rename Set.root to Set.top
 ** add Set.bottom
@@ -15,10 +16,12 @@
 * randomize node creation in Set.insert!
 ** add prob field
 *** divide by two in init loop
-*** multiply in insert loop
+*** multiply in insert loop    
 
 * add multi param to Set.insert!
 ** skip early return
+
+* change Void to nothing in Fbls.jl
 
 * implement Set.find
 
