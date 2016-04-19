@@ -26,11 +26,11 @@ runExample1() = begin
     @assert !isempty(bars)
 
     # Records are initialized with globally unique ids on first upsert
-    @assert get(bars, recid(brec)) == brec    
+    @assert get(bars, brec[recid]) == brec    
 
     frec = upsert!(foos, RecOf(foo => "abc", foobar => brec))
     @assert length(foos) == 1
-    @assert haskey(foos, recid(frec))
+    @assert haskey(foos, frec[recid])
 
     # Records are really just Dicts mapping fields to values
     @assert frec[foobar] == brec
@@ -46,7 +46,7 @@ runExample1() = begin
     @assert !isdirty(brec, bars)
 
     # record revision is increased on each upsert!
-    @assert revision(brec, bars) == 2
+    @assert brec[revision(bars)] == 2
 
     # Tables can be dumped to and loaded from any IO stream
     buf = IOBuffer()
@@ -55,7 +55,7 @@ runExample1() = begin
     seekstart(buf)
     load!(foos, buf)
     @assert length(foos) == 1
-    @assert haskey(foos, recid(frec))
+    @assert haskey(foos, frec[recid])
 end
 
 ```
