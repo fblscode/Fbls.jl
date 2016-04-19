@@ -1,3 +1,8 @@
+* add length, isempty & empty! methods
+** null all next/prev links from top to bottom & set length == 0 in empty!
+** run tests
+** commit
+
 * randomize node creation in Set.insert!
 ** add prob field
 *** divide by two in init loop
@@ -11,15 +16,18 @@
 * implement Set.delete!
 ** loop while match, opt val param
 
-* change Void to nothing in Fbls.jl
-
 * implement Set.range
 ** return iterator
 
+* change Void to nothing in Fbls.jl
+
+* add Sortix type
+** implement in Sortix.jl and include in Fbls.jl
+** map tuple of keys to recids in smultidict
+** take isunique constructor param
+** throw DupKey when attempting to insert key that's already in idx if unique
+
 * add trans support
-* add HashUnix
-** use tuple keys
+* add encryption support
+* add suppor for hash indexes
 ** base on Dict
-* add HashMultix
-** base on Dict of Sets
-* add sorted idxs

@@ -123,16 +123,25 @@ end
 
 testSmultiBasics() = begin
     d = SmultiDict{Int, Void}(8)
+    @assert isempty(d)
+
     insert!(d, 1, nothing)
+    @assert !isempty(d)
+
     insert!(d, 3, nothing)
     insert!(d, 2, nothing)
     insert!(d, 5, nothing)
     insert!(d, 4, nothing)
 
     print(d)
-
+    
+    @assert length(d) == 5
     @assert first(d).first == 1
     @assert last(d).first == 5
+
+    empty!(d)
+    @assert isempty(d)
+    @assert length(d) == 0
 end
 
 testSmulti() = begin
