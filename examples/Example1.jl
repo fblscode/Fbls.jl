@@ -41,7 +41,7 @@ runExample1() = begin
 
     upsert!(bars, brec)
 
-    # calling isdirty() without specifying columns checks all columns in tbl
+    # calling isdirty() without specifying columns checks all columns in table
     @assert !isdirty(brec, bars)
 
     # record revision is increased on each upsert!

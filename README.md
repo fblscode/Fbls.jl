@@ -42,7 +42,7 @@ runExample1() = begin
 
     upsert!(bars, brec)
 
-    # calling isdirty() without specifying columns checks all columns in tbl
+    # calling isdirty() without specifying columns checks all columns in table
     @assert !isdirty(brec, bars)
 
     # record revision is increased on each upsert!
@@ -112,7 +112,7 @@ runExample2() = begin
     # Just checking to make sure the offset made it all the way
     @assert get(rix, rec[recid]) == rec[offs(tbl)]
 
-    # Drop all records from tbl and reload record via offset index
+    # Drop all records from tbl and reload via offset index
     empty!(tbl)
     @assert get(tbl, rix, rec[recid])[col] == "abc"
 
