@@ -82,7 +82,7 @@ Tables map globally unique ids to records. Each table contains a set of columns 
 A reverse index maps record ids to values for a specific column. Combining a reverse offset index with an IO table is a nice trick to enable lazy loading of records.
 
 ## events
-Tables and indexes have delete, load and upsert events that can be hooked into. All events are triggered before the triggering action is carried out, which allowd for accessing previous state and validating new data. pushdep! is provided as a shortcut to hook into all events.
+Tables and indexes have delete, load and upsert events that can be hooked into. Events are triggered before the triggering action is carried out, which allows for accessing previous state and validating new data. pushdep! is provided as a shortcut to hook into all events.
 
 ## wrap on, wrap off
 Fbls uses wrapping extensively to enable arbitrary combinations of functionality. Any table can be wrapped by an IO table to add stream logging, any number of layers can be wrapped on top; and all the pieces are still accessible in their original state, the initial table reference still knows nothing about IO. Any column can be made temporary, the same column can even be temporary in one table and persistent in another.
