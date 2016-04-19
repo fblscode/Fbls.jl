@@ -4,13 +4,10 @@
 ```julia
 
 import Base: IOBuffer, seekstart
-import Fbls: Cx, BasicCol, RecCol, RecOf, Tbl, dump, get, haskey, upsert!, 
-isempty, length, load!, pushcol!, recid
+import Fbls: BasicCol, RecCol, RecOf, Tbl, dump, get, haskey, upsert!, isempty,
+length, load!, pushcol!, recid
 
 runExample1() = begin
-    # All data ops require a context
-    cx = Cx()
-
     bars = Tbl(:bars)
     bar = BasicCol{Int}(:bar)
 
@@ -25,15 +22,15 @@ runExample1() = begin
     pushcol!(foos, foo, foobar)
 
     # RecOf() is a shortcut to create filled records
-    brec = upsert!(bars, RecOf(bar => 42), cx)
+    brec = upsert!(bars, RecOf(bar => 42))
     @assert !isempty(bars)
 
     # Records are initialized with globally unique ids on first upsert
-    @assert get(bars, recid(brec), cx) == brec    
+    @assert get(bars, recid(brec)) == brec    
 
-    frec = upsert!(foos, RecOf(foo => "abc", foobar => brec), cx)
+    frec = upsert!(foos, RecOf(foo => "abc", foobar => brec))
     @assert length(foos) == 1
-    @assert haskey(foos, recid(frec), cx)
+    @assert haskey(foos, recid(frec))
 
     # Records are really just Dicts mapping fields to values
     @assert frec[foobar] == brec
@@ -43,9 +40,9 @@ runExample1() = begin
     dump(foos, buf)
     empty!(foos)
     seekstart(buf)
-    load!(foos, buf, cx)
+    load!(foos, buf)
     @assert length(foos) == 1
-    @assert haskey(foos, recid(frec), cx)
+    @assert haskey(foos, recid(frec))
 end
 
 ```

@@ -1,5 +1,3 @@
-* remove cx
-
 * try one more time to add Col{}() constructor
 
 * replace Void return from getrec with get(, default)
