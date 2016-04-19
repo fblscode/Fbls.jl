@@ -3,11 +3,16 @@
 * randomize node creation in Set.insert!
 ** check godbase.Skip
 
+* add multi param to Set.insert!
+** skip early return
+
 * implement Set.find
 
 * implement Set.delete!
+** loop while match
 
 * implement Set.rangewhile
+** check godbase set interface
 
 * add trans support
 * add HashUnix
