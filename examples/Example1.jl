@@ -3,8 +3,8 @@ module Examples
 push!(LOAD_PATH, "..")
 
 import Base: IOBuffer, seekstart
-import Fbls: BasicCol, Col, RecCol, RecOf, Tbl, dump, get, haskey, isdirty, 
-isempty, length, load!, pushcol!, recid, revision, upsert!
+import Fbls: Col, RecCol, RecOf, Tbl, dump, get, haskey, isdirty, isempty, 
+length, load!, pushcol!, recid, revision, upsert!
 
 runExample1() = begin
     bars = Tbl(:bars)

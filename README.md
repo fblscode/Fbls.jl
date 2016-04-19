@@ -4,8 +4,8 @@
 ```julia
 
 import Base: IOBuffer, seekstart
-import Fbls: BasicCol, Col, RecCol, RecOf, Tbl, dump, get, haskey, isdirty, 
-isempty, length, load!, pushcol!, recid, revision, upsert!
+import Fbls: Col, RecCol, RecOf, Tbl, dump, get, haskey, isdirty, isempty, 
+length, load!, pushcol!, recid, revision, upsert!
 
 runExample1() = begin
     bars = Tbl(:bars)
@@ -86,3 +86,42 @@ Tables and indexes have delete, load and upsert events that can be hooked into. 
 
 ## wrap on, wrap off
 Fbls uses wrapping extensively to enable arbitrary combinations of functionality. Any table can be wrapped by an IO table to add stream logging, any number of layers can be wrapped on top; and all the pieces are still accessible in their original state, the initial table reference still knows nothing about IO. Any column can be made temporary, the same column can even be temporary in one table and persistent in another.
+
+```julia
+
+import Base: IOBuffer, seekstart
+import Fbls: Col, IO, RecOf, Revix, Tbl, get, isempty, load!, offs, pushcol!, pushdep!, recid, upsert!
+
+runExample2() = begin
+    out = IOBuffer()
+
+    # IO tables log all writes to the specified stream
+    tbl = IO(Tbl(:foobars), out)
+    col = Col(AbstractString, :bar)
+    pushcol!(tbl, col)
+
+    # Let's add an in-memory reverse index on the offset column
+    # IO records are tagged with current offset on upsert!
+    rix = Revix(:foobar_offs, offs(tbl))
+
+    # pushdep!() registers rix to receive events for all updates to tbl
+    pushdep!(tbl, rix)
+
+    rec = upsert!(tbl, RecOf(col => "abc"))
+
+    # Just checking to make sure the offset made it all the way
+    @assert get(rix, rec[recid]) == rec[offs(tbl)]
+
+    # Drop all records from tbl and reload record via offset index
+    empty!(tbl)
+    @assert get(tbl, rix, rec[recid])[col] == "abc"
+
+    # Deletes are also logged
+    delete!(tbl, rec[recid])
+    empty!(tbl)
+    seekstart(out)
+    load!(tbl, out)
+    @assert isempty(tbl)
+end
+
+```
