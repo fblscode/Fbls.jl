@@ -293,24 +293,20 @@ delete!(tbl::Tbl, id::RecId) = begin
     delete!(bt.recs, id)
 end
 
-get(tbl::Tbl, id::RecId) = BasicTbl(tbl).recs[id]
+get(tbl::Tbl, id::RecId) = begin
+    if !haskey(tbl, id) throw(RecNotFound()) end
+    return BasicTbl(tbl).recs[id]
+end
 
 initrec!(rec) = begin
-    if !haskey(rec, idCol)
-        rec[idCol] = RecId()
-    end
-
+    if !haskey(rec, idCol) rec[idCol] = RecId() end
     return rec
 end
 
 initrec!(tbl::Tbl, rec::Rec) = begin
     initrec!(rec)
     bt = BasicTbl(tbl)
-
-    if !haskey(rec, bt.revisionCol)
-        rec[bt.revisionCol] = 1
-    end
-
+    if !haskey(rec, bt.revisionCol) rec[bt.revisionCol] = 1 end
     return rec
 end
 
