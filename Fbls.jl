@@ -4,10 +4,11 @@ import Base: AbstractIOBuffer, ==, convert, delete!, done, empty!, eof, get, get
 import Base.Dates: DateTime, datetime2unix, now, unix2datetime
 import Base.Random: UUID, uuid4
 
+typealias IOBuf AbstractIOBuffer
 typealias Offs Int64
 typealias RecId UUID
+typealias Revision Int64
 typealias Str AbstractString
-typealias IOBuf AbstractIOBuffer
 typealias Vec{T} Array{T, 1}
 
 abstract Err <: Exception
@@ -65,10 +66,12 @@ immutable BasicCol{ValT} <: Col{ValT}
     fld::Fld
 
     BasicCol(n::Symbol, f::Fld) = new(n, f)
-    BasicCol(n::Symbol) = new(n, Fld())
 end
 
-alias{ValT}(col::Col{ValT}, n::Symbol) = BasicCol{ValT}(n, Fld(col))
+Col(ValT, n::Symbol, f::Fld) = BasicCol{ValT}(n, f)
+Col(ValT, n::Symbol) = Col(ValT, n, Fld())
+
+alias{ValT}(col::Col{ValT}, n::Symbol) = Col(ValT, n, Fld(col))
 
 convert{ValT}(::Type{Fld}, col::Col{ValT}) = BasicCol{ValT}(col).fld
 
@@ -90,8 +93,8 @@ istemp{ValT}(::TempCol{ValT}) = true
 
 RecId() = uuid4()
 
-idCol = BasicCol{RecId}(:fbls_id)
-isdelCol = BasicCol{Bool}(:fbls_isdel)
+idCol = Col(RecId, :fbls_id)
+isdelCol = Col(Bool, :fbls_isdel)
 
 recid(r::Rec) = r[idCol]
 
@@ -243,8 +246,8 @@ immutable BasicTbl <: Tbl
         t = new(n, 
                 TblCols(),
                 TblRecs(), 
-                BasicCol{DateTime}(symbol("($n)_upsertedat")), 
-                BasicCol{Int64}(symbol("$(n)_revision")),
+                Col(DateTime, symbol("($n)_upsertedat")), 
+                Col(Revision, symbol("$(n)_revision")),
                 Evt{Tuple{RecId}}(),
                 Evt{Tuple{Rec}}(),
                 Evt{Tuple{Rec}}())
@@ -377,7 +380,7 @@ immutable RecCol <: Col{Rec}
     RecCol(col::Col{Rec}, tbl::Tbl) = new(col, tbl)
 end
 
-RecCol(n::Symbol, tbl::Tbl) = RecCol(BasicCol{Rec}(n), tbl)
+RecCol(n::Symbol, tbl::Tbl) = RecCol(Col(Rec, n), tbl)
 
 convert(::Type{BasicCol{Rec}}, col::RecCol) = BasicCol{Rec}(col.wrapped)
 
@@ -388,7 +391,7 @@ immutable RefCol <: Col{RecId}
     RefCol(col::Col{RecId}, tbl::Tbl) = new(col, tbl)
 end
 
-RefCol(n::Symbol, tbl::Tbl) = RefCol(BasicCol{RecId}(n), tbl)
+RefCol(n::Symbol, tbl::Tbl) = RefCol(Col(RecId, n), tbl)
 
 convert(::Type{BasicCol{RecId}}, col::RefCol) = BasicCol{RecId}(col.wrapped)
 
@@ -494,7 +497,7 @@ immutable IOTbl <: Tbl
     
     IOTbl(tbl::Tbl, buf::IOBuf, offsCol::Col{Offs}) = begin
         t = new(tbl, buf, offsCol, 
-                BasicCol{Offs}(symbol("$(defname(tbl))_prevoffs")))
+                Col(Offs, symbol("$(defname(tbl))_prevoffs")))
 
         pushcol!(tbl, isdelCol, t.offsCol, t.prevoffsCol)
 
@@ -502,8 +505,7 @@ immutable IOTbl <: Tbl
     end
 end
 
-IO(tbl::Tbl, buf::IOBuf; 
-   offsCol = BasicCol{Offs}(symbol("$(defname(tbl))_offs"))) = 
+IO(tbl::Tbl, buf::IOBuf; offsCol = Col(Offs, symbol("$(defname(tbl))_offs"))) = 
     IOTbl(tbl, buf, offsCol)
 
 cols(tbl::IOTbl) = cols(tbl.wrapped)
@@ -609,7 +611,7 @@ end
 
 testRecBasics() = begin
     r = Rec()
-    c = BasicCol{Str}(:foo)
+    c = Col(Str, :foo)
     @assert r[c] == Void
     
     r[c] = "abc"
@@ -623,7 +625,7 @@ end
 
 testTempCol() = begin
     t = Tbl(:foo)
-    c = BasicCol{Str}(:bar)
+    c = Col(Str, :bar)
     tc = Temp(c)
     pushcol!(t, tc)
 
@@ -660,7 +662,7 @@ end
 
 testReadWriteRec() = begin
     t = Tbl(:foos)
-    c = BasicCol{Str}(:bar)
+    c = Col(Str, :bar)
     pushcol!(t, c)
 
     r = Rec()
@@ -693,7 +695,7 @@ testReadWriteRecCol() = begin
 end
 
 testAliasCol() = begin
-    foo = BasicCol{Str}(:foo)
+    foo = Col(Str, :foo)
     bar = alias(foo, :bar)
     
     r = Rec()
@@ -745,8 +747,8 @@ end
 
 testIsdirty() = begin
     t = Tbl(:foobars)
-    foo = BasicCol{Str}(:foo)
-    bar = BasicCol{Str}(:bar)
+    foo = Col(Str, :foo)
+    bar = Col(Str, :bar)
     pushcol!(t, foo, bar)
 
     r = RecOf(foo => "abc", bar => "def")
@@ -798,7 +800,7 @@ testRevix() = begin
 end
 
 testDumpLoadRevix() = begin
-    c = BasicCol{Str}(:foo)
+    c = Col(Str, :foo)
     rx = Revix(:foos, c)
     r = upsert!(rx, initrec!(RecOf(c => "abc")))
     
@@ -812,7 +814,7 @@ testDumpLoadRevix() = begin
 end
 
 testIORevix() = begin
-    c = BasicCol{Str}(:foo)
+    c = Col(Str, :foo)
     buf = TempBuf()
     rx = IO(Revix(:foos, c), buf)
     rec = upsert!(rx, initrec!(RecOf(c => "abc")))

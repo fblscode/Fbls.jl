@@ -4,18 +4,18 @@
 ```julia
 
 import Base: IOBuffer, seekstart
-import Fbls: BasicCol, RecCol, RecOf, Tbl, dump, get, haskey, upsert!, isempty,
-length, load!, pushcol!, recid
+import Fbls: BasicCol, Col, RecCol, RecOf, Tbl, dump, get, haskey, upsert!, 
+isempty, length, load!, pushcol!, recid
 
 runExample1() = begin
     bars = Tbl(:bars)
-    bar = BasicCol{Int}(:bar)
+    bar = Col(Int, :bar)
 
     # Columns are added to tables using pushcol!
     pushcol!(bars, bar)
 
     foos = Tbl(:foos)
-    foo = BasicCol{AbstractString}(:foo)
+    foo = Col(AbstractString, :foo)
 
     # RecCols reference other records
     foobar = RecCol(:foobar, bars)
