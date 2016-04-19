@@ -60,7 +60,7 @@ end
 
 ```
 
-## the big picture
+## what's up
 Fbls is an attempt at adding more degrees of freedom to the database paradigm, it's an itch I've been scratching for a while now. I'm all for standards as interfaces and theory as a starting point; but I'm drawing a line in the sand right here, the madness has to stop. All I ever really cared about was the ability to store, index and retrieve my data. I'm sick and tired of having feature check lists, academia and arbitrary limitations shoved down my throat; of being forced to bend ideas backwards around hairy solutions to the wrong problem, just to gain basic persistence.
 
 ## status
