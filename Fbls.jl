@@ -1,6 +1,8 @@
 module Fbls
 
-import Base: AbstractIOBuffer, ==, convert, delete!, done, empty!, eof, get, getindex, isempty, haskey, length, next, position, push!, seekend, setindex!, start
+import Base: AbstractIOBuffer, ==, convert, delete!, done, empty!, eof, get, 
+gethash, index, isempty, haskey, length, next, position, push!, seekend, 
+setindex!, start
 import Base.Dates: DateTime, datetime2unix, now, unix2datetime
 import Base.Random: UUID, uuid4
 
@@ -106,6 +108,8 @@ recid(r::Rec) = r[idCol]
 
     return lid != Void && rid != Void && lid == rid
 end
+
+hash(r::Rec) = hash(recid(r))
 
 pushdep!(def, dep) = begin
     sub!(ondelete(def), (id) -> delete!(dep, id))
