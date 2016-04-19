@@ -1,4 +1,9 @@
+* remove cx
+
 * try one more time to add Col{}() constructor
+
+* replace Void return from getrec with get(, default)
+** override get?
 
 * end readme with event io example based on offsidx test
 ** add custom type/read/writeval
