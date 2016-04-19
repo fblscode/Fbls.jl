@@ -1,6 +1,3 @@
-* replace Void return from getrec with get(, default)
-** override get?
-
 * end readme with event io example based on offsidx test
 ** add custom type/read/writeval
 ** add tempcol with custom type
@@ -8,13 +5,6 @@
 ** keep offs idx in memory
 ** call writerec directly on tbl
 *** add specialization without buf
-
-* remaining issues: 
-** how to best add seq support?
-** any way to steal the tuple parametric vararg magic?
-** any way to get parametric function types?
-** better alternative to returning Void from getindex?
-** any special vars
 
 * ---
 
