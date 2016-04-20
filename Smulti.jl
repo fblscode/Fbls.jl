@@ -195,12 +195,18 @@ testSmultiBasics() = begin
     s = Smulti{Int, Int}(5)
     @assert isempty(s)
 
+    try
+        v = s[42]
+        @assert false
+    catch e
+        @assert isa(e, KeyError)
+    end
+
     for v in vs insert!(s, v, v) end
     
     print(s)
     @assert !isempty(s)
 
-    
     @assert length(s) == len
     @assert first(s).first == 1
     @assert last(s).first == len

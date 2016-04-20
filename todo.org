@@ -1,10 +1,8 @@
-* implement Set.delete!
+* implement delete!
 ** loop while match, opt val param
 
 * implement getindex(smulti, range)
 ** return iterator (pair(node, end))
-
-* implement copy(smulti, optional range)
 
 * change Void to nothing in Fbls.jl
 
@@ -14,7 +12,8 @@
 ** take isunique constructor param
 ** throw DupKey when attempting to insert key that's already in idx if unique
 
-* add trans support
-* add encryption support
-* add suppor for hash indexes
+* add transactions
+* add encryption
+* add hash indexes
 ** base on Dict
+* implement copy(smulti, opt range)
