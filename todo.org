@@ -1,9 +1,5 @@
-* randomize node creation in Set.insert!
-** add prob field
-*** divide by two in init loop
-*** multiply in insert loop    
-
 * add haskey & getindex
+** add test
 
 * implement Set.delete!
 ** loop while match, opt val param

@@ -172,7 +172,7 @@ testSmultiBasics() = begin
 
     vs = Array(1:len)
 
-    s = Smulti{Int, Void}(8)
+    s = Smulti{Int, Void}(3)
     @assert isempty(s)
 
     for v in vs insert!(s, v, nothing) end
