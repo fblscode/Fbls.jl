@@ -16,8 +16,6 @@ runSkipMapBasics() = begin
     for v in vs insert!(s, v, v) end
     @assert !isempty(s)
 
-    print(s)
-    
     @assert length(s) == len
     @assert first(s).first == 1
     @assert last(s).first == len
@@ -42,6 +40,15 @@ runSkipMapBasics() = begin
     @assert length(s) == 0
 end
 
+skipMapPerfreps = 10000
+
+import DataStructures: SortedDict
+
 runSkipMap() = begin
     runSkipMapBasics()
+
+    vs = Array(1:skipMapPerfreps)
+
+    @timeit runMapPerf(SortedDict(Dict{Int, Int}()), vs)
+    @timeit runMapPerf(SkipMap{Int, Int}(4), vs)
 end

@@ -319,6 +319,13 @@ runIORevix() = begin
     @assert !haskey(rx, id)
 end
 
+runMapPerf(m, vs::Array{Int, 1}) = begin
+    for v in vs m[v] = v end
+    for v in vs @assert haskey(m, v) end
+    for v in vs m[v] = v * 2 end
+    for v in vs delete!(m, v) end
+end
+
 include("SkipMapTests.jl")
 include("HashMapTests.jl")
 include("SkipixTests.jl")

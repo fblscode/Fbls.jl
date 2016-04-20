@@ -1,7 +1,3 @@
-* compare skipmap perf to SortedDict
-
-* compare hashmap perf to Dict
-
 * change skipmap to skip deterministically in findnode
 ** keep track of steps & pn
 ** insert new up node in chain and link to pn if steps / maxsteps

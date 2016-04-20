@@ -16,8 +16,6 @@ runHashMapBasics() = begin
     for v in vs insert!(m, v, v) end
     @assert !isempty(m)
 
-    print(m)
-    
     @assert length(m) == len
 
     for v in vs 
@@ -38,6 +36,19 @@ runHashMapBasics() = begin
     @assert length(m) == 0
 end
 
+hashMapPerfreps = 10000
+
+runHashMapPerf(m, vs::Array{Int, 1}) = begin
+    for v in vs m[v] = v end
+    for v in vs @assert haskey(m, v) end
+    for v in vs m[v] = v * 2 end
+    for v in vs delete!(m, v) end
+end
+
 runHashMap() = begin
     runHashMapBasics()
+
+    vs = Array(1:hashMapPerfreps)
+    @timeit runMapPerf(Dict{Int, Int}(), vs)
+    @timeit runMapPerf(HashMap{Int, Int}(1000, 2), vs)
 end
