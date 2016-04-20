@@ -22,6 +22,8 @@
 
 * implement remento in example2
 
+* add hashmap resize!
+
 * add transactions
 * add encryption
 * add hash indexes

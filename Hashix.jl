@@ -1,30 +1,31 @@
-abstract Skipix{K <: Tuple}
+abstract Hashix{K <: Tuple}
 
-typealias SkipixRecs{K} SkipMap{K, RecId}
+typealias HashixRecs{K} HashMap{K, RecId}
 
-immutable BasicSkipix{K} <: Skipix{K}
+immutable BasicHashix{K} <: Hashix{K}
     name::Symbol
     key::Tuple
     isunique::Bool
-    recs::SkipixRecs
+    recs::HashixRecs
     ondelete::Evt{Tuple{RecId}} 
     onload::Evt{Tuple{Rec}} 
     onupsert::Evt{Tuple{Rec}} 
 
-    BasicSkipix(n::Symbol, key::Tuple, isunique::Bool, levels::Int) =
+    BasicHashix(n::Symbol, key::Tuple, isunique::Bool, 
+                slotcount::Int,  levels::Int) =
         new(n, key, isunique,
-            SkipixRecs{K}(levels),
+            HashixRecs{K}(slotcount, levels),
             Evt{Tuple{RecId}}(),
             Evt{Tuple{Rec}}(),
             Evt{Tuple{Rec}}())
 end
 
-Skipix(K, n::Symbol, key::Tuple, levels::Int; isunique=false) = 
-    BasicSkipix{K}(n, key, isunique, levels)
+Hashix(K, n::Symbol, key::Tuple, slotcount::Int, levels::Int; isunique=false) = 
+    BasicHashix{K}(n, key, isunique, slotcount, levels)
 
-defname{K}(sx::Skipix{K}) = BasicSkipix{K}(sx).name
+defname{K}(sx::Hashix{K}) = BasicHashix{K}(sx).name
 
-insert!{K}(sx::Skipix{K}, rec::Rec) = begin
+insert!{K}(sx::Hashix{K}, rec::Rec) = begin
     id = rec[recid]
 
     if insert!(sx.recs, map((c) -> rec[c], sx.key), id; 
@@ -35,9 +36,9 @@ insert!{K}(sx::Skipix{K}, rec::Rec) = begin
     return rec
 end
 
-testSkipix() = begin
+testHashix() = begin
     col = Col(Str, :foo)
-    sx = Skipix(Tuple{Str}, :bar, (col,), 3; isunique=true)
+    sx = Hashix(Tuple{Str}, :bar, (col,), 10, 3; isunique=true)
     rec = RecOf(col => "abc")
     insert!(sx, rec)
     insert!(sx, rec)

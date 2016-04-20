@@ -242,6 +242,7 @@ end
 include("IOTbl.jl")
 include("Revix.jl")
 include("Skipix.jl")
+include("Hashix.jl")
 
 get(tbl::IOTbl, idx::Revix{Offs}, id::RecId) = begin
     if haskey(tbl.wrapped, id)
@@ -542,6 +543,7 @@ testAll() = begin
     testDumpLoadRevix()
     testIORevix()
     testSkipix()
+    testHashix()
 end
 
 end
