@@ -75,9 +75,7 @@ insert!{KeyT, ValT}(s::Smulti{KeyT, ValT}, key::KeyT, val::ValT;
     while true
         n = n.next
 
-        while n.kv != nothing && isless(n.kv.first, key)
-            n = n.next
-        end
+        while n.kv != nothing && isless(n.kv.first, key) n = n.next end
 
         if !multi && n.kv != nothing && n.kv.first == key 
             if update n.kv = Pair{KeyT, ValT}(key, val) end
@@ -88,10 +86,7 @@ insert!{KeyT, ValT}(s::Smulti{KeyT, ValT}, key::KeyT, val::ValT;
         if pnn != nothing nn.down = pnn end
         pnn = nn
 
-        if n.prev.down == n.prev 
-            break 
-        end
-
+        if n.prev.down == n.prev break end
         n = n.prev.down
     end
 
