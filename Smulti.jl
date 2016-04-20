@@ -55,6 +55,27 @@ type Smulti{KeyT, ValT}
     end
 end
 
+delete!{KeyT, ValT}(s::Smulti{KeyT, ValT}, 
+                    key::KeyT, val = nothing) = begin
+    n = findnode(s, key)
+    if n == nothing return 0 end
+
+    cnt = 0
+
+    while n.kv != nothing && n.kv.first == key
+        if val == nothing || n.kv.second == val
+            n.prev.next = n.next
+            n.next.prev = n.prev
+            cnt += 1
+        end
+        
+        n = n.next
+    end
+
+    s.length -= cnt
+    return cnt
+end
+
 empty!{KeyT, ValT}(s::Smulti{KeyT, ValT}) = begin
     n = s.top
     pn = nothing
@@ -225,6 +246,13 @@ testSmultiBasics() = begin
 
     for v in vs s[v] = v * 2 end
     for v in vs @assert s[v] == v * 2 end
+
+    offs = Int(len/2)
+    for i in 1:offs
+        @assert delete!(s, vs[i]) == 1
+    end
+
+    @assert length(s) == len - offs
 
     empty!(s)
     @assert isempty(s)
