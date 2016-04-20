@@ -1,11 +1,11 @@
-type SmultiNode{KeyT, ValT}
-    down::SmultiNode{KeyT, ValT}
-    next::SmultiNode{KeyT, ValT}
+type SkipNode{KeyT, ValT}
+    down::SkipNode{KeyT, ValT}
+    next::SkipNode{KeyT, ValT}
     kv::Any
-    prev::SmultiNode{KeyT, ValT}
-    up::SmultiNode{KeyT, ValT}
+    prev::SkipNode{KeyT, ValT}
+    up::SkipNode{KeyT, ValT}
 
-    SmultiNode() = begin
+    SkipNode() = begin
         n = new()
         n.kv = nothing
         n.prev = n
@@ -15,7 +15,7 @@ type SmultiNode{KeyT, ValT}
         return n
     end
     
-    SmultiNode(key::KeyT, val::ValT, prev::SmultiNode{KeyT, ValT}) = begin
+    SkipNode(key::KeyT, val::ValT, prev::SkipNode{KeyT, ValT}) = begin
         n = new()
         n.kv = Pair{KeyT, ValT}(key, val)
         n.prev = prev
@@ -26,20 +26,20 @@ type SmultiNode{KeyT, ValT}
     end
 end
 
-type Smulti{KeyT, ValT}
-    bottom::SmultiNode{KeyT, ValT}
+type SkipMap{KeyT, ValT}
+    bottom::SkipNode{KeyT, ValT}
     length::Int
     levels::Rational
-    top::SmultiNode{KeyT, ValT}
+    top::SkipNode{KeyT, ValT}
 
-    Smulti(levels::Int) = begin
+    SkipMap(levels::Int) = begin
         s = new()
         s.levels = levels
-        s.top = SmultiNode{KeyT, ValT}()
+        s.top = SkipNode{KeyT, ValT}()
         n = s.top
 
         for i in 1:levels-1
-            n.down = SmultiNode{KeyT, ValT}()
+            n.down = SkipNode{KeyT, ValT}()
             n.down.up = n
             n = n.down
         end
@@ -50,7 +50,7 @@ type Smulti{KeyT, ValT}
     end
 end
 
-delete!{KeyT, ValT}(s::Smulti{KeyT, ValT}, 
+delete!{KeyT, ValT}(s::SkipMap{KeyT, ValT}, 
                     key::KeyT, val = nothing) = begin
     n = findnode(s, key)
     if n == nothing return 0 end
@@ -71,7 +71,7 @@ delete!{KeyT, ValT}(s::Smulti{KeyT, ValT},
     return cnt
 end
 
-empty!{KeyT, ValT}(s::Smulti{KeyT, ValT}) = begin
+empty!{KeyT, ValT}(s::SkipMap{KeyT, ValT}) = begin
     n = s.top
     pn = nothing
     
@@ -87,9 +87,9 @@ empty!{KeyT, ValT}(s::Smulti{KeyT, ValT}) = begin
     return s
 end
 
-first{KeyT, ValT}(s::Smulti{KeyT, ValT}) = s.bottom.next.kv
+first{KeyT, ValT}(s::SkipMap{KeyT, ValT}) = s.bottom.next.kv
 
-findnode{KeyT, ValT}(s::Smulti{KeyT, ValT}, key::KeyT) = begin
+findnode{KeyT, ValT}(s::SkipMap{KeyT, ValT}, key::KeyT) = begin
     n = s.top
     depth = 1
 
@@ -108,16 +108,16 @@ findnode{KeyT, ValT}(s::Smulti{KeyT, ValT}, key::KeyT) = begin
     return nothing
 end
 
-getindex{KeyT, ValT}(s::Smulti{KeyT, ValT}, key::KeyT) = begin
+getindex{KeyT, ValT}(s::SkipMap{KeyT, ValT}, key::KeyT) = begin
     n = findnode(s, key)
     if n != nothing return n.kv.second end
     throw(KeyError(key))
 end
 
-haskey{KeyT, ValT}(s::Smulti{KeyT, ValT}, key::KeyT) =
+haskey{KeyT, ValT}(s::SkipMap{KeyT, ValT}, key::KeyT) =
     findnode(s, key) != nothing
 
-insert!{KeyT, ValT}(s::Smulti{KeyT, ValT}, key::KeyT, val::ValT; 
+insert!{KeyT, ValT}(s::SkipMap{KeyT, ValT}, key::KeyT, val::ValT; 
                     multi=false, update=false) = begin
     n = s.top
     pnn = nothing
@@ -137,7 +137,7 @@ insert!{KeyT, ValT}(s::Smulti{KeyT, ValT}, key::KeyT, val::ValT;
         islast = n.prev.down == n.prev
 
         if islast || rand() < prob
-            nn = SmultiNode{KeyT, ValT}(key, val, n.prev)
+            nn = SkipNode{KeyT, ValT}(key, val, n.prev)
             if pnn != nothing nn.up = pnn end
             pnn = nn
         else
@@ -163,16 +163,16 @@ insert!{KeyT, ValT}(s::Smulti{KeyT, ValT}, key::KeyT, val::ValT;
     return val
 end
 
-isempty{KeyT, ValT}(s::Smulti{KeyT, ValT}) = s.length == 0
+isempty{KeyT, ValT}(s::SkipMap{KeyT, ValT}) = s.length == 0
 
-last{KeyT, ValT}(s::Smulti{KeyT, ValT}) = s.bottom.prev.kv
+last{KeyT, ValT}(s::SkipMap{KeyT, ValT}) = s.bottom.prev.kv
 
-length{KeyT, ValT}(s::Smulti{KeyT, ValT}) = s.length
+length{KeyT, ValT}(s::SkipMap{KeyT, ValT}) = s.length
 
-setindex!{KeyT, ValT}(s::Smulti{KeyT, ValT}, val::ValT, key::KeyT) =
+setindex!{KeyT, ValT}(s::SkipMap{KeyT, ValT}, val::ValT, key::KeyT) =
     insert!(s, key, val, update=true)
 
-show{KeyT, ValT}(io::IO, n::SmultiNode{KeyT, ValT}) = begin
+show{KeyT, ValT}(io::IO, n::SkipNode{KeyT, ValT}) = begin
     print(io, "[")
     n = n.next
     sep = ""
@@ -187,7 +187,7 @@ show{KeyT, ValT}(io::IO, n::SmultiNode{KeyT, ValT}) = begin
     print(io, "]")
 end
 
-show{KeyT, ValT}(io::IO, s::Smulti{KeyT, ValT}) = begin
+show{KeyT, ValT}(io::IO, s::SkipMap{KeyT, ValT}) = begin
     n = s.top
     pn = nothing
 
@@ -210,12 +210,12 @@ randArray(a::Array{Int, 1}) = begin
     end
 end
 
-testSmultiBasics() = begin
+testSkipMapBasics() = begin
     len = 50
 
     vs = Array(1:len)
 
-    s = Smulti{Int, Int}(5)
+    s = SkipMap{Int, Int}(5)
     @assert isempty(s)
 
     try
@@ -254,6 +254,6 @@ testSmultiBasics() = begin
     @assert length(s) == 0
 end
 
-testSmulti() = begin
-    testSmultiBasics()
+testSkipMap() = begin
+    testSkipMapBasics()
 end

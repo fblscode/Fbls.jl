@@ -1,30 +1,30 @@
-abstract Sortix{KeyT <: Tuple}
+abstract Skipix{KeyT <: Tuple}
 
-typealias SortixRecs{KeyT} Smulti{KeyT, RecId}
+typealias SkipixRecs{KeyT} SkipMap{KeyT, RecId}
 
-immutable BasicSortix{KeyT} <: Sortix{KeyT}
+immutable BasicSkipix{KeyT} <: Skipix{KeyT}
     name::Symbol
     key::Tuple
     isunique::Bool
-    recs::SortixRecs
+    recs::SkipixRecs
     ondelete::Evt{Tuple{RecId}} 
     onload::Evt{Tuple{Rec}} 
     onupsert::Evt{Tuple{Rec}} 
 
-    BasicSortix(n::Symbol, key::Tuple, isunique::Bool, levels::Int) =
+    BasicSkipix(n::Symbol, key::Tuple, isunique::Bool, levels::Int) =
         new(n, key, isunique,
-            SortixRecs{KeyT}(levels),
+            SkipixRecs{KeyT}(levels),
             Evt{Tuple{RecId}}(),
             Evt{Tuple{Rec}}(),
             Evt{Tuple{Rec}}())
 end
 
-Sortix(KeyT, n::Symbol, key::Tuple; isunique=false, levels=4) = 
-    BasicSortix{KeyT}(n, key, isunique, levels)
+Skipix(KeyT, n::Symbol, key::Tuple; isunique=false, levels=4) = 
+    BasicSkipix{KeyT}(n, key, isunique, levels)
 
-defname{KeyT}(sx::Sortix{KeyT}) = BasicSortix{KeyT}(sx).name
+defname{KeyT}(sx::Skipix{KeyT}) = BasicSkipix{KeyT}(sx).name
 
-insert!{KeyT}(sx::Sortix{KeyT}, rec::Rec) = begin
+insert!{KeyT}(sx::Skipix{KeyT}, rec::Rec) = begin
     id = rec[recid]
 
     if insert!(sx.recs, map((c) -> rec[c], sx.key), id; 
@@ -35,9 +35,9 @@ insert!{KeyT}(sx::Sortix{KeyT}, rec::Rec) = begin
     return rec
 end
 
-testSortix() = begin
+testSkipix() = begin
     col = Col(Str, :foo)
-    sx = Sortix(Tuple{Str}, :bar, (col,); isunique=true)
+    sx = Skipix(Tuple{Str}, :bar, (col,); isunique=true)
     rec = RecOf(col => "abc")
     insert!(sx, rec)
     insert!(sx, rec)

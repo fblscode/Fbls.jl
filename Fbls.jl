@@ -17,7 +17,7 @@ abstract Err <: Exception
 type DupKey <: Err end
 type RecNotFound <: Err end
 
-include("Smulti.jl")
+include("SkipMap.jl")
 
 TempBuf() = IOBuffer()
 
@@ -238,7 +238,7 @@ end
 
 include("IOTbl.jl")
 include("Revix.jl")
-include("Sortix.jl")
+include("Skipix.jl")
 
 get(tbl::IOTbl, idx::Revix{Offs}, id::RecId) = begin
     if haskey(tbl.wrapped, id)
@@ -517,7 +517,7 @@ testIORevix() = begin
 end
 
 testAll() = begin
-    testSmulti()
+    testSkipMap()
     testTblBasics()
     testRecBasics()
     testIOTblBasics()
@@ -537,7 +537,7 @@ testAll() = begin
     testRevix()
     testDumpLoadRevix()
     testIORevix()
-    testSortix()
+    testSkipix()
 end
 
 end
