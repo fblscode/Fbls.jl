@@ -1,13 +1,14 @@
+* add isunique Sortix constructor param
+** throw DupKey when attempting to insert key that's already in idx if unique
+
+* add Fld name and override show()
+
+* add Evt name and override show()
+
 * implement getindex(smulti, range)
 ** return iterator (pair(node, end))
 
 * add multi range test
-
-* add Sortix type
-** implement in Sortix.jl and include in Fbls.jl
-** map tuple of keys to recids in smultidict
-** take isunique constructor param
-** throw DupKey when attempting to insert key that's already in idx if unique
 
 * add transactions
 * add encryption

@@ -131,7 +131,7 @@ insert!{KeyT, ValT}(s::Smulti{KeyT, ValT}, key::KeyT, val::ValT;
 
         if !multi && n.kv != nothing && n.kv.first == key 
             if update n.kv = Pair{KeyT, ValT}(key, val) end
-            return false 
+            return n.kv.second 
         end
 
         islast = n.prev.down == n.prev
@@ -160,7 +160,7 @@ insert!{KeyT, ValT}(s::Smulti{KeyT, ValT}, key::KeyT, val::ValT;
     end
 
     s.length += 1
-    return true
+    return val
 end
 
 isempty{KeyT, ValT}(s::Smulti{KeyT, ValT}) = s.length == 0
