@@ -1,11 +1,10 @@
-* add haskey & getindex
-** add test
-
 * implement Set.delete!
 ** loop while match, opt val param
 
-* implement Set.range
-** return iterator
+* implement getindex(smulti, range)
+** return iterator (pair(node, end))
+
+* implement copy(smulti, optional range)
 
 * change Void to nothing in Fbls.jl
 
