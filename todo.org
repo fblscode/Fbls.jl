@@ -21,7 +21,11 @@
 
 * add IOSortix
 
-* compare smulti perf to SortedDict
+* compare skipmap perf to SortedDict
+
+* compare hashmap perf to Dict
+
+* implement remento in example2
 
 * add transactions
 * add encryption
