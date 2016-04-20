@@ -38,12 +38,11 @@ type Smulti{KeyT, ValT}
         s = new()
         s.top = SmultiNode{KeyT, ValT}()
         n = s.top
-        s.prob = 1
+        s.prob = 1 // levels
 
         for i in 1:levels-1
             n.down = SmultiNode{KeyT, ValT}() 
             n = n.down
-            s.prob //= 2
         end
 
         s.bottom = n
@@ -75,7 +74,6 @@ insert!{KeyT, ValT}(s::Smulti{KeyT, ValT}, key::KeyT, val::ValT;
     n = s.top
     pnn = nothing
     prob = s.prob
-    prevadd = 1
 
     while true
         n = n.next
@@ -89,17 +87,17 @@ insert!{KeyT, ValT}(s::Smulti{KeyT, ValT}, key::KeyT, val::ValT;
 
         islast = n.prev.down == n.prev
 
-        if rand() / prevadd < prob || islast
+        if rand() < prob || islast
             nn = SmultiNode{KeyT, ValT}(key, val, n.prev)
             if pnn != nothing nn.down = pnn end
             pnn = nn
-            prevadd += 1
+        else
+            prob += prob
         end
 
         if islast break end
         n = n.prev.down
-
-        prob *= 3
+        prob += prob
     end
 
     nn = pnn
@@ -170,7 +168,7 @@ testSmultiBasics() = begin
 
     vs = Array(1:len)
 
-    s = Smulti{Int, Void}(3)
+    s = Smulti{Int, Void}(5)
     @assert isempty(s)
 
     for v in vs insert!(s, v, nothing) end
