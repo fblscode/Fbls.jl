@@ -2,6 +2,8 @@
 
 * add Evt name and override show()
 
+* add multi col sortix test
+
 * implement getindex(smulti, range)
 ** return iterator (pair(node, end))
 
