@@ -241,6 +241,9 @@ end
 
 include("IOTbl.jl")
 include("Revix.jl")
+
+abstract Mapix{K <: Tuple}
+
 include("Skipix.jl")
 include("Hashix.jl")
 

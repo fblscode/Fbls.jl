@@ -1,9 +1,12 @@
-* add Hashix
-** copy Skipix and switch to HashMap
+* compare skipmap perf to SortedDict
+
+* compare hashmap perf to Dict
 
 * add Fld name and override show()
 
 * add Evt name and override show()
+
+* implement remento in example2
 
 * add multi col sortix test
 
@@ -16,13 +19,9 @@
 
 * add IOSortix
 
-* compare skipmap perf to SortedDict
-
-* compare hashmap perf to Dict
-
-* implement remento in example2
-
 * add hashmap resize!
+
+* add skipmap resize!
 
 * add transactions
 * add encryption

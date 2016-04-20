@@ -1,4 +1,4 @@
-abstract Skipix{K <: Tuple}
+abstract Skipix{K} <: Mapix{K}
 
 typealias SkipixRecs{K} SkipMap{K, RecId}
 

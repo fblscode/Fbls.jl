@@ -1,4 +1,4 @@
-abstract Hashix{K <: Tuple}
+abstract Hashix{K} <: Mapix{K}
 
 typealias HashixRecs{K} HashMap{K, RecId}
 
