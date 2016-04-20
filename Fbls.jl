@@ -101,10 +101,10 @@ recid = Col(RecId, :fbls_id)
 isdelCol = Col(Bool, :fbls_isdel)
 
 ==(l::Rec, r::Rec) = begin
-    lid = get(l, recid, Void)
-    rid = get(r, recid, Void)
+    lid = get(l, recid, nothing)
+    rid = get(r, recid, nothing)
 
-    return lid != Void && rid != Void && lid == rid
+    return lid != nothing && rid != nothing && lid == rid
 end
 
 hash(r::Rec) = hash(r[recid])
@@ -310,10 +310,10 @@ end
 
 upsert!(tbl::Tbl, rec::Rec) = begin
     bt = BasicTbl(tbl)
-    id = get(rec, recid, Void)
+    id = get(rec, recid, nothing)
     rec[bt.timestamp] = now()
 
-    prev = if id != Void && haskey(bt.recs, id) 
+    prev = if id != nothing && haskey(bt.recs, id) 
         rec[bt.revision] += 1
         push!(bt.onupsert, (rec,))
         bt.recs[id]
@@ -341,7 +341,8 @@ isdirty(rec::Rec, tbl::Tbl, cols::AnyCol...) = begin
     if !haskey(bt.recs, rid) return true end
     trec = bt.recs[rid]
     if isempty(cols) cols = bt.cols end
-    return reduce(|, [get(rec, c, Void) != get(trec, c, Void) for c in cols])  
+    return reduce(|, [get(rec, c, nothing) != get(trec, c, nothing) 
+                      for c in cols])  
 end
 
 load!(tbl::Tbl, rec::Rec) = begin

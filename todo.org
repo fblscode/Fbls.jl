@@ -1,7 +1,3 @@
-* implement delete!
-** loop while match, opt val param
-** add test
-
 * implement getindex(smulti, range)
 ** return iterator (pair(node, end))
 
