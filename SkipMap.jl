@@ -29,7 +29,7 @@ end
 type SkipMap{K, V} <: Map{K, V}
     bottom::SkipNode{K, V}
     length::Int
-    levels::Rational
+    levels::Int
     top::SkipNode{K, V}
 
     SkipMap(levels::Int) = begin
@@ -90,18 +90,34 @@ first{K, V}(s::SkipMap{K, V}) = s.bottom.next.kv
 
 findnode{K, V}(s::SkipMap{K, V}, key::K) = begin
     n = s.top
-    depth = 1
-
+    maxsteps = 2 << (max(2, s.levels) - 2)
+    steps = 1
+    pn = nothing
+    
     while true
         n = n.next
 
-        while n.kv != nothing && isless(n.kv.first, key) n = n.next end
+        while n.kv != nothing && isless(n.kv.first, key) 
+            if steps == maxsteps && pn != nothing
+                nn = SkipNode{K, V}(n.kv.first, n.kv.second, pn)
+                nn.down = n
+                nn.up = n.up
+                nn.up.down = nn
+                n.up = nn
+                steps = 0
+            end
+
+            n = n.next 
+            steps += 1
+        end
 
         if n.kv != nothing && n.kv.first == key return n end
 
         if n.prev.down == n.prev break end
+        pn = n
         n = n.prev.down
-        depth += 1
+        steps = 1
+        maxsteps /= 2
     end
 
     return nothing
