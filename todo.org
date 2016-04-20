@@ -1,6 +1,3 @@
-* add isunique Sortix constructor param
-** throw DupKey when attempting to insert key that's already in idx if unique
-
 * add Fld name and override show()
 
 * add Evt name and override show()
@@ -9,6 +6,10 @@
 ** return iterator (pair(node, end))
 
 * add multi range test
+
+* add Sortix ops
+
+* add IOSortix
 
 * add transactions
 * add encryption
