@@ -1,6 +1,7 @@
 module Fbls
 
-import Base: empty!, getindex, isempty, isless, length, setindex, show
+import Base: empty!, getindex, haskey, isempty, isless, length, setindex, 
+show
 
 type SmultiNode{KeyT, ValT}
     prev::SmultiNode{KeyT, ValT}
@@ -27,33 +28,48 @@ type SmultiNode{KeyT, ValT}
     end
 end
 
-type SmultiDict{KeyT, ValT}
+type Smulti{KeyT, ValT}
     top::SmultiNode{KeyT, ValT}
     bottom::SmultiNode{KeyT, ValT}
     length::Int
 
-    SmultiDict(levels::Int) = begin
-        d = new()
-        d.top = SmultiNode{KeyT, ValT}()
-        n = d.top
+    Smulti(levels::Int) = begin
+        s = new()
+        s.top = SmultiNode{KeyT, ValT}()
+        n = s.top
 
         for i in 1:levels-1
             n.down = SmultiNode{KeyT, ValT}() 
             n = n.down
         end
 
-        d.bottom = n
-        d.length = 0
-        return d
+        s.bottom = n
+        s.length = 0
+        return s
     end
 end
 
-first{KeyT, ValT}(d::SmultiDict{KeyT, ValT}) = d.bottom.next.kv
-last{KeyT, ValT}(d::SmultiDict{KeyT, ValT}) = d.bottom.prev.kv
+empty!{KeyT, ValT}(s::Smulti{KeyT, ValT}) = begin
+    n = s.top
+    pn = nothing
+    
+    while n != pn
+        n.prev = n
+        n.next = n
+        pn = n
+        n = n.next
+    end
 
-insert!{KeyT, ValT}(d::SmultiDict{KeyT, ValT}, key::KeyT, val::ValT; 
+    s.length = 0
+
+    return s
+end
+
+first{KeyT, ValT}(s::Smulti{KeyT, ValT}) = s.bottom.next.kv
+
+insert!{KeyT, ValT}(s::Smulti{KeyT, ValT}, key::KeyT, val::ValT; 
                     multi=false, update=false) = begin
-    n = d.top
+    n = s.top
     pnn = nothing
 
     while true
@@ -91,11 +107,17 @@ insert!{KeyT, ValT}(d::SmultiDict{KeyT, ValT}, key::KeyT, val::ValT;
         nn = up
     end
 
-    d.length += 1
+    s.length += 1
     return true
 end
 
-setindex!{KeyT, ValT}(d::SmultiDict{KeyT, ValT}, val::ValT, key::KeyT) =
+isempty{KeyT, ValT}(s::Smulti{KeyT, ValT}) = s.length == 0
+
+last{KeyT, ValT}(s::Smulti{KeyT, ValT}) = s.bottom.prev.kv
+
+length{KeyT, ValT}(s::Smulti{KeyT, ValT}) = s.length
+
+setindex!{KeyT, ValT}(s::Smulti{KeyT, ValT}, val::ValT, key::KeyT) =
     insert(d, key, val, update=true)
 
 show{KeyT, ValT}(io::IO, n::SmultiNode{KeyT, ValT}) = begin
@@ -113,8 +135,8 @@ show{KeyT, ValT}(io::IO, n::SmultiNode{KeyT, ValT}) = begin
     print(io, "]")
 end
 
-show{KeyT, ValT}(io::IO, d::SmultiDict{KeyT, ValT}) = begin
-    n = d.top
+show{KeyT, ValT}(io::IO, s::Smulti{KeyT, ValT}) = begin
+    n = s.top
     pn = nothing
 
     while n != pn 
@@ -126,26 +148,26 @@ show{KeyT, ValT}(io::IO, d::SmultiDict{KeyT, ValT}) = begin
 end
 
 testSmultiBasics() = begin
-    d = SmultiDict{Int, Void}(8)
-    @assert isempty(d)
+    s = Smulti{Int, Void}(8)
+    @assert isempty(s)
 
-    insert!(d, 1, nothing)
-    @assert !isempty(d)
+    insert!(s, 1, nothing)
+    @assert !isempty(s)
 
-    insert!(d, 3, nothing)
-    insert!(d, 2, nothing)
-    insert!(d, 5, nothing)
-    insert!(d, 4, nothing)
+    insert!(s, 3, nothing)
+    insert!(s, 2, nothing)
+    insert!(s, 5, nothing)
+    insert!(s, 4, nothing)
 
-    print(d)
+    print(s)
     
-    @assert length(d) == 5
-    @assert first(d).first == 1
-    @assert last(d).first == 5
+    @assert length(s) == 5
+    @assert first(s).first == 1
+    @assert last(s).first == 5
 
-    empty!(d)
-    @assert isempty(d)
-    @assert length(d) == 0
+    empty!(s)
+    @assert isempty(s)
+    @assert length(s) == 0
 end
 
 testSmulti() = begin

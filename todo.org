@@ -1,14 +1,9 @@
-* add length, isempty & empty! methods
-** null all next/prev links from top to bottom & set length == 0 in empty!
-** run tests
-** commit
-
 * randomize node creation in Set.insert!
 ** add prob field
 *** divide by two in init loop
 *** multiply in insert loop    
 
-* add getindex overload
+* add haskey & getindex
 
 * implement Set.delete!
 ** loop while match, opt val param
