@@ -87,11 +87,9 @@ insert!{KeyT, ValT}(s::Smulti{KeyT, ValT}, key::KeyT, val::ValT;
             return false 
         end
 
-        p = rand(1)[1]
-
         islast = n.prev.down == n.prev
 
-        if rand(1)[1] / prevadd < prob || islast
+        if rand() / prevadd < prob || islast
             nn = SmultiNode{KeyT, ValT}(key, val, n.prev)
             if pnn != nothing nn.down = pnn end
             pnn = nn
