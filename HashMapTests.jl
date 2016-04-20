@@ -2,6 +2,7 @@ runHashMapBasics() = begin
     len = 50
 
     vs = Array(1:len)
+    randArray!(vs)
 
     m = HashMap{Int, Int}(10, 5)
     @assert isempty(m)
@@ -49,6 +50,8 @@ runHashMap() = begin
     runHashMapBasics()
 
     vs = Array(1:hashMapPerfreps)
+    randArray!(vs)
+
     @timeit runMapPerf(Dict{Int, Int}(), vs)
-    @timeit runMapPerf(HashMap{Int, Int}(1000, 1), vs)
+    @timeit runMapPerf(HashMap{Int, Int}(8000, 1), vs)
 end

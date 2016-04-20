@@ -200,14 +200,3 @@ show{K, V}(io::IO, s::SkipMap{K, V}) = begin
         n = n.down 
     end
 end
-
-randArray(a::Array{Int, 1}) = begin
-    len = length(a)
-
-    for i in 1:len
-        j = rand(1:l)
-        tmp = a[i]
-        a[i] = a[j]
-        a[j] = tmp
-    end
-end

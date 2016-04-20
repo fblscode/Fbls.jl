@@ -1,5 +1,16 @@
 module Tests
 
+randArray!(a::Array{Int, 1}) = begin
+    len = length(a)
+
+    for i in 1:len
+        j = rand(1:len)
+        tmp = a[i]
+        a[i] = a[j]
+        a[j] = tmp
+    end
+end
+
 macro timen(ex, n)
     quote
         local t0 = time_ns()

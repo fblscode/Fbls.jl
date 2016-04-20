@@ -2,6 +2,7 @@ runSkipMapBasics() = begin
     len = 50
 
     vs = Array(1:len)
+    randArray!(vs)
 
     s = SkipMap{Int, Int}(5)
     @assert isempty(s)
@@ -40,7 +41,7 @@ runSkipMapBasics() = begin
     @assert length(s) == 0
 end
 
-skipMapPerfreps = 10000
+skipMapPerfreps = 5000
 
 import DataStructures: SortedDict
 
@@ -48,6 +49,7 @@ runSkipMap() = begin
     runSkipMapBasics()
 
     vs = Array(1:skipMapPerfreps)
+    randArray!(vs)
 
     @timeit runMapPerf(SortedDict(Dict{Int, Int}()), vs)
     @timeit runMapPerf(SkipMap{Int, Int}(70), vs)
