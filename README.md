@@ -79,7 +79,7 @@ Records maps fields to values. Fields usually represent columns, but adding cust
 Tables map globally unique ids to records. Each table contains a set of columns that all records are projected onto. This means that even though a record can contain values from multiple tables, any specific table will only store values mapped to it's own set of columns. 
 
 ## reverse indexes
-A reverse index maps record ids to values for a specific column. Combining a reverse offset index with an IO table is a nice trick to enable lazy loading of records.
+A reverse index maps record ids to values for a specific column. Combining a reverse offset index with an IO table enables enable loading records lazily.
 
 ## events
 Tables and indexes have delete, load and upsert events that can be hooked into. Events are triggered before the triggering action is carried out, which allows for accessing previous state and validating new data. pushdep!() is provided as a shortcut to hook into all events.
