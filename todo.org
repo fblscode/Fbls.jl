@@ -1,11 +1,13 @@
 * implement delete!
 ** loop while match, opt val param
+** add test
 
 * implement getindex(smulti, range)
 ** return iterator (pair(node, end))
 
-* change Void to nothing in Fbls.jl
+* add multi range test
 
+* change Void to nothing in Fbls.jl
 
 * add Sortix type
 ** implement in Sortix.jl and include in Fbls.jl
