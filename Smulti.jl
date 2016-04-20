@@ -1,6 +1,6 @@
 module Fbls
 
-import Base: empty!, getindex, haskey, isempty, isless, length, setindex, 
+import Base: KeyError, empty!, getindex, haskey, isempty, isless, length, setindex, 
 show
 
 type SmultiNode{KeyT, ValT}
@@ -69,6 +69,34 @@ end
 
 first{KeyT, ValT}(s::Smulti{KeyT, ValT}) = s.bottom.next.kv
 
+findnode{KeyT, ValT}(s::Smulti{KeyT, ValT}, key::KeyT) = begin
+    n = s.top
+    depth = 1
+
+    while true
+        n = n.next
+
+        while n.kv != nothing && isless(n.kv.first, key) n = n.next end
+
+        if n.kv != nothing && n.kv.first == key return n => depth end
+
+        if n.prev.down == n.prev break end
+        n = n.prev.down
+        depth += 1
+    end
+
+    return nothing
+end
+
+getindex{KeyT, ValT}(s::Smulti{KeyT, ValT}, key::KeyT) = begin
+    n = findnode(s, key)
+    if n != nothing return n.first.kv.second end
+    throw(KeyError(key))
+end
+
+haskey{KeyT, ValT}(s::Smulti{KeyT, ValT}, key::KeyT) =
+    findnode(s, key) != nothing
+
 insert!{KeyT, ValT}(s::Smulti{KeyT, ValT}, key::KeyT, val::ValT; 
                     multi=false, update=false) = begin
     n = s.top
@@ -123,7 +151,7 @@ last{KeyT, ValT}(s::Smulti{KeyT, ValT}) = s.bottom.prev.kv
 length{KeyT, ValT}(s::Smulti{KeyT, ValT}) = s.length
 
 setindex!{KeyT, ValT}(s::Smulti{KeyT, ValT}, val::ValT, key::KeyT) =
-    insert(d, key, val, update=true)
+    insert!(s, key, val, update=true)
 
 show{KeyT, ValT}(io::IO, n::SmultiNode{KeyT, ValT}) = begin
     print(io, "[")
@@ -168,10 +196,10 @@ testSmultiBasics() = begin
 
     vs = Array(1:len)
 
-    s = Smulti{Int, Void}(5)
+    s = Smulti{Int, Int}(5)
     @assert isempty(s)
 
-    for v in vs insert!(s, v, nothing) end
+    for v in vs insert!(s, v, v) end
     @assert !isempty(s)
 
     print(s)
@@ -179,6 +207,14 @@ testSmultiBasics() = begin
     @assert length(s) == len
     @assert first(s).first == 1
     @assert last(s).first == len
+
+    for v in vs 
+        @assert haskey(s, v)
+        @assert s[v] == v 
+    end
+
+    for v in vs s[v] = v * 2 end
+    for v in vs @assert s[v] == v * 2 end
 
     empty!(s)
     @assert isempty(s)
