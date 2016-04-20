@@ -1,3 +1,11 @@
+* rename Smulti to SkipMap
+
+* rename Sortix to Skipix
+
+* add HashMap
+
+* add Hashix based on HashMap
+
 * add Fld name and override show()
 
 * add Evt name and override show()
