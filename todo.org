@@ -1,9 +1,5 @@
-* add HashMap
-** use Dict{Int64, SkipMap{Key, Val}} as vals
-** add length
-** use Base.hash()
-
-* add Hashix based on HashMap
+* add Hashix
+** copy Skipix and switch to HashMap
 
 * add Fld name and override show()
 

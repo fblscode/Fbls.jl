@@ -1,29 +1,29 @@
-abstract Revix{ValT}
+abstract Revix{V}
 
-typealias RevixRecs{ValT} Dict{RecId, ValT}
+typealias RevixRecs{V} Dict{RecId, V}
 
-immutable BasicRevix{ValT} <: Revix{ValT}
+immutable BasicRevix{V} <: Revix{V}
     name::Symbol
-    col::Col{ValT}
-    recs::RevixRecs{ValT}
+    col::Col{V}
+    recs::RevixRecs{V}
     ondelete::Evt{Tuple{RecId}} 
     onload::Evt{Tuple{Rec}} 
     onupsert::Evt{Tuple{Rec}} 
 
-    BasicRevix(n::Symbol, c::Col{ValT}) = new(n, c, 
-                                              RevixRecs{ValT}(), 
+    BasicRevix(n::Symbol, c::Col{V}) = new(n, c, 
+                                              RevixRecs{V}(), 
                                               Evt{Tuple{RecId}}(),
                                               Evt{Tuple{Rec}}(),
                                               Evt{Tuple{Rec}}())
 end
 
-Revix{ValT}(n::Symbol, c::Col{ValT}) = BasicRevix{ValT}(n, c)
+Revix{V}(n::Symbol, c::Col{V}) = BasicRevix{V}(n, c)
 
 defname(rx::Revix) = BasicRevix(rx).name
 
 empty!(rx::Revix) = empty!(BasicRevix(rx).recs)
 
-get{ValT}(rx::Revix{ValT}, id::RecId) = BasicRevix{ValT}(rx).recs[id]
+get{V}(rx::Revix{V}, id::RecId) = BasicRevix{V}(rx).recs[id]
 
 haskey(rx::Revix, id::RecId) = haskey(BasicRevix(rx).recs, id)
 
@@ -82,20 +82,20 @@ load!(rx::Revix, in::IOBuf) = begin
     end
 end
 
-immutable IORevix{ValT} <: Revix{ValT}
-    wrapped::Revix{ValT}
+immutable IORevix{V} <: Revix{V}
+    wrapped::Revix{V}
     buf::IOBuf
     
-    IORevix(rx::Revix{ValT}, buf::IOBuf) = new(rx, buf)
+    IORevix(rx::Revix{V}, buf::IOBuf) = new(rx, buf)
 end
 
-IO{ValT}(rx::Revix{ValT}, buf::IOBuf) =
-    IORevix{ValT}(rx, buf)
+IO{V}(rx::Revix{V}, buf::IOBuf) =
+    IORevix{V}(rx, buf)
 
 convert(::Type{BasicRevix}, rx::IORevix) = BasicRevix(rx.wrapped)
 
-convert{ValT}(::Type{BasicRevix{ValT}}, rx::IORevix{ValT}) = 
-    BasicRevix{ValT}(rx.wrapped)
+convert{V}(::Type{BasicRevix{V}}, rx::IORevix{V}) = 
+    BasicRevix{V}(rx.wrapped)
 
 delete!(rx::IORevix, id::RecId) = begin
     delete!(rx.wrapped, id)

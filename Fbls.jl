@@ -1,8 +1,8 @@
 module Fbls
 
 import Base: AbstractIOBuffer, KeyError, ==, convert, delete!, done, empty!, 
-eof, get, gethash, getindex, index, isempty, isless, haskey, length, next, 
-position, push!, seekend, setindex!, show, start
+eof, get, hash, getindex, isempty, isless, haskey, length, next, position, 
+push!, seekend, setindex!, show, start
 import Base.Dates: DateTime, datetime2unix, now, unix2datetime
 import Base.Random: UUID, uuid4
 
@@ -17,7 +17,10 @@ abstract Err <: Exception
 type DupKey <: Err end
 type RecNotFound <: Err end
 
+abstract Map{K, V}
+
 include("SkipMap.jl")
+include("HashMap.jl")
 
 TempBuf() = IOBuffer()
 
@@ -518,6 +521,7 @@ end
 
 testAll() = begin
     testSkipMap()
+    testHashMap()
     testTblBasics()
     testRecBasics()
     testIOTblBasics()

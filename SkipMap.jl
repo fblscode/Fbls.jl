@@ -1,9 +1,9 @@
-type SkipNode{KeyT, ValT}
-    down::SkipNode{KeyT, ValT}
-    next::SkipNode{KeyT, ValT}
+type SkipNode{K, V}
+    down::SkipNode{K, V}
+    next::SkipNode{K, V}
     kv::Any
-    prev::SkipNode{KeyT, ValT}
-    up::SkipNode{KeyT, ValT}
+    prev::SkipNode{K, V}
+    up::SkipNode{K, V}
 
     SkipNode() = begin
         n = new()
@@ -15,9 +15,9 @@ type SkipNode{KeyT, ValT}
         return n
     end
     
-    SkipNode(key::KeyT, val::ValT, prev::SkipNode{KeyT, ValT}) = begin
+    SkipNode(key::K, val::V, prev::SkipNode{K, V}) = begin
         n = new()
-        n.kv = Pair{KeyT, ValT}(key, val)
+        n.kv = Pair{K, V}(key, val)
         n.prev = prev
         n.next = prev.next
         n.down = n
@@ -26,20 +26,20 @@ type SkipNode{KeyT, ValT}
     end
 end
 
-type SkipMap{KeyT, ValT}
-    bottom::SkipNode{KeyT, ValT}
+type SkipMap{K, V} <: Map{K, V}
+    bottom::SkipNode{K, V}
     length::Int
     levels::Rational
-    top::SkipNode{KeyT, ValT}
+    top::SkipNode{K, V}
 
     SkipMap(levels::Int) = begin
         s = new()
         s.levels = levels
-        s.top = SkipNode{KeyT, ValT}()
+        s.top = SkipNode{K, V}()
         n = s.top
 
         for i in 1:levels-1
-            n.down = SkipNode{KeyT, ValT}()
+            n.down = SkipNode{K, V}()
             n.down.up = n
             n = n.down
         end
@@ -50,8 +50,7 @@ type SkipMap{KeyT, ValT}
     end
 end
 
-delete!{KeyT, ValT}(s::SkipMap{KeyT, ValT}, 
-                    key::KeyT, val = nothing) = begin
+delete!{K, V}(s::SkipMap{K, V}, key::K, val = nothing) = begin
     n = findnode(s, key)
     if n == nothing return 0 end
 
@@ -71,7 +70,7 @@ delete!{KeyT, ValT}(s::SkipMap{KeyT, ValT},
     return cnt
 end
 
-empty!{KeyT, ValT}(s::SkipMap{KeyT, ValT}) = begin
+empty!{K, V}(s::SkipMap{K, V}) = begin
     n = s.top
     pn = nothing
     
@@ -87,9 +86,9 @@ empty!{KeyT, ValT}(s::SkipMap{KeyT, ValT}) = begin
     return s
 end
 
-first{KeyT, ValT}(s::SkipMap{KeyT, ValT}) = s.bottom.next.kv
+first{K, V}(s::SkipMap{K, V}) = s.bottom.next.kv
 
-findnode{KeyT, ValT}(s::SkipMap{KeyT, ValT}, key::KeyT) = begin
+findnode{K, V}(s::SkipMap{K, V}, key::K) = begin
     n = s.top
     depth = 1
 
@@ -108,17 +107,16 @@ findnode{KeyT, ValT}(s::SkipMap{KeyT, ValT}, key::KeyT) = begin
     return nothing
 end
 
-getindex{KeyT, ValT}(s::SkipMap{KeyT, ValT}, key::KeyT) = begin
+getindex{K, V}(s::SkipMap{K, V}, key::K) = begin
     n = findnode(s, key)
     if n != nothing return n.kv.second end
     throw(KeyError(key))
 end
 
-haskey{KeyT, ValT}(s::SkipMap{KeyT, ValT}, key::KeyT) =
-    findnode(s, key) != nothing
+haskey{K, V}(s::SkipMap{K, V}, key::K) = findnode(s, key) != nothing
 
-insert!{KeyT, ValT}(s::SkipMap{KeyT, ValT}, key::KeyT, val::ValT; 
-                    multi=false, update=false) = begin
+insert!{K, V}(s::SkipMap{K, V}, key::K, val::V; 
+              multi=false, update=false) = begin
     n = s.top
     pnn = nothing
     dprob = 1 // s.levels
@@ -130,14 +128,18 @@ insert!{KeyT, ValT}(s::SkipMap{KeyT, ValT}, key::KeyT, val::ValT;
         while n.kv != nothing && isless(n.kv.first, key) n = n.next end
 
         if !multi && n.kv != nothing && n.kv.first == key 
-            if update n.kv = Pair{KeyT, ValT}(key, val) end
-            return n.kv.second 
+            if update 
+                n.kv = Pair{K, V}(key, val) 
+                return nothing
+            end
+
+            return n.kv.second
         end
 
         islast = n.prev.down == n.prev
 
         if islast || rand() < prob
-            nn = SkipNode{KeyT, ValT}(key, val, n.prev)
+            nn = SkipNode{K, V}(key, val, n.prev)
             if pnn != nothing nn.up = pnn end
             pnn = nn
         else
@@ -163,16 +165,16 @@ insert!{KeyT, ValT}(s::SkipMap{KeyT, ValT}, key::KeyT, val::ValT;
     return val
 end
 
-isempty{KeyT, ValT}(s::SkipMap{KeyT, ValT}) = s.length == 0
+isempty{K, V}(s::SkipMap{K, V}) = s.length == 0
 
-last{KeyT, ValT}(s::SkipMap{KeyT, ValT}) = s.bottom.prev.kv
+last{K, V}(s::SkipMap{K, V}) = s.bottom.prev.kv
 
-length{KeyT, ValT}(s::SkipMap{KeyT, ValT}) = s.length
+length{K, V}(s::SkipMap{K, V}) = s.length
 
-setindex!{KeyT, ValT}(s::SkipMap{KeyT, ValT}, val::ValT, key::KeyT) =
+setindex!{K, V}(s::SkipMap{K, V}, val::V, key::K) = 
     insert!(s, key, val, update=true)
 
-show{KeyT, ValT}(io::IO, n::SkipNode{KeyT, ValT}) = begin
+show{K, V}(io::IO, n::SkipNode{K, V}) = begin
     print(io, "[")
     n = n.next
     sep = ""
@@ -187,7 +189,7 @@ show{KeyT, ValT}(io::IO, n::SkipNode{KeyT, ValT}) = begin
     print(io, "]")
 end
 
-show{KeyT, ValT}(io::IO, s::SkipMap{KeyT, ValT}) = begin
+show{K, V}(io::IO, s::SkipMap{K, V}) = begin
     n = s.top
     pn = nothing
 

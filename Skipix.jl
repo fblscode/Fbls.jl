@@ -1,8 +1,8 @@
-abstract Skipix{KeyT <: Tuple}
+abstract Skipix{K <: Tuple}
 
-typealias SkipixRecs{KeyT} SkipMap{KeyT, RecId}
+typealias SkipixRecs{K} SkipMap{K, RecId}
 
-immutable BasicSkipix{KeyT} <: Skipix{KeyT}
+immutable BasicSkipix{K} <: Skipix{K}
     name::Symbol
     key::Tuple
     isunique::Bool
@@ -13,18 +13,18 @@ immutable BasicSkipix{KeyT} <: Skipix{KeyT}
 
     BasicSkipix(n::Symbol, key::Tuple, isunique::Bool, levels::Int) =
         new(n, key, isunique,
-            SkipixRecs{KeyT}(levels),
+            SkipixRecs{K}(levels),
             Evt{Tuple{RecId}}(),
             Evt{Tuple{Rec}}(),
             Evt{Tuple{Rec}}())
 end
 
-Skipix(KeyT, n::Symbol, key::Tuple; isunique=false, levels=4) = 
-    BasicSkipix{KeyT}(n, key, isunique, levels)
+Skipix(K, n::Symbol, key::Tuple; isunique=false, levels=4) = 
+    BasicSkipix{K}(n, key, isunique, levels)
 
-defname{KeyT}(sx::Skipix{KeyT}) = BasicSkipix{KeyT}(sx).name
+defname{K}(sx::Skipix{K}) = BasicSkipix{K}(sx).name
 
-insert!{KeyT}(sx::Skipix{KeyT}, rec::Rec) = begin
+insert!{K}(sx::Skipix{K}, rec::Rec) = begin
     id = rec[recid]
 
     if insert!(sx.recs, map((c) -> rec[c], sx.key), id; 
