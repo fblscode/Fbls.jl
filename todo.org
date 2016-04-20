@@ -11,6 +11,8 @@
 
 * add IOSortix
 
+* compare smulti perf to SortedDict
+
 * add transactions
 * add encryption
 * add hash indexes
