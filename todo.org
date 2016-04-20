@@ -1,6 +1,7 @@
 * change skipmap to skip deterministically in findnode
 ** keep track of steps & pn
 ** insert new up node in chain and link to pn if steps / maxsteps
+** change insert! to use findnode
 
 * implement remento in example2
 
