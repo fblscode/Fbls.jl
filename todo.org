@@ -2,11 +2,13 @@
 
 * compare hashmap perf to Dict
 
+* implement remento in example2
+
+* post maps
+
 * add Fld name and override show()
 
 * add Evt name and override show()
-
-* implement remento in example2
 
 * add multi col sortix test
 
@@ -15,9 +17,13 @@
 
 * add multi range test
 
-* add Sortix ops
+* add skipix ops
 
-* add IOSortix
+* add hashix ops
+
+* add ioskipix
+
+* add iohashix
 
 * add hashmap resize!
 
@@ -25,6 +31,7 @@
 
 * add transactions
 * add encryption
-* add hash indexes
-** base on Dict
+
 * implement copy(smulti, opt range)
+
+* add set ops
