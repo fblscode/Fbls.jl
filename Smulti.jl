@@ -4,10 +4,10 @@ import Base: empty!, getindex, haskey, isempty, isless, length, setindex,
 show
 
 type SmultiNode{KeyT, ValT}
-    prev::SmultiNode{KeyT, ValT}
-    next::SmultiNode{KeyT, ValT}
     down::SmultiNode{KeyT, ValT}
-    kv
+    next::SmultiNode{KeyT, ValT}
+    kv::Any
+    prev::SmultiNode{KeyT, ValT}
 
     SmultiNode() = begin
         n = new()
@@ -29,18 +29,21 @@ type SmultiNode{KeyT, ValT}
 end
 
 type Smulti{KeyT, ValT}
-    top::SmultiNode{KeyT, ValT}
     bottom::SmultiNode{KeyT, ValT}
     length::Int
+    prob::Rational
+    top::SmultiNode{KeyT, ValT}
 
     Smulti(levels::Int) = begin
         s = new()
         s.top = SmultiNode{KeyT, ValT}()
         n = s.top
+        s.prob = 1
 
         for i in 1:levels-1
             n.down = SmultiNode{KeyT, ValT}() 
             n = n.down
+            s.prob //= 2
         end
 
         s.bottom = n
@@ -71,6 +74,8 @@ insert!{KeyT, ValT}(s::Smulti{KeyT, ValT}, key::KeyT, val::ValT;
                     multi=false, update=false) = begin
     n = s.top
     pnn = nothing
+    prob = s.prob
+    prevadd = 1
 
     while true
         n = n.next
@@ -82,12 +87,21 @@ insert!{KeyT, ValT}(s::Smulti{KeyT, ValT}, key::KeyT, val::ValT;
             return false 
         end
 
-        nn = SmultiNode{KeyT, ValT}(key, val, n.prev)
-        if pnn != nothing nn.down = pnn end
-        pnn = nn
+        p = rand(1)[1]
 
-        if n.prev.down == n.prev break end
+        islast = n.prev.down == n.prev
+
+        if rand(1)[1] / prevadd < prob || islast
+            nn = SmultiNode{KeyT, ValT}(key, val, n.prev)
+            if pnn != nothing nn.down = pnn end
+            pnn = nn
+            prevadd += 1
+        end
+
+        if islast break end
         n = n.prev.down
+
+        prob *= 3
     end
 
     nn = pnn
@@ -142,23 +156,33 @@ show{KeyT, ValT}(io::IO, s::Smulti{KeyT, ValT}) = begin
     end
 end
 
+randArray(a::Array{Int, 1}) = begin
+    len = length(a)
+
+    for i in 1:len
+        j = rand(1:l)
+        tmp = a[i]
+        a[i] = a[j]
+        a[j] = tmp
+    end
+end
+
 testSmultiBasics() = begin
+    len = 50
+
+    vs = Array(1:len)
+
     s = Smulti{Int, Void}(8)
     @assert isempty(s)
 
-    insert!(s, 1, nothing)
+    for v in vs insert!(s, v, nothing) end
     @assert !isempty(s)
-
-    insert!(s, 3, nothing)
-    insert!(s, 2, nothing)
-    insert!(s, 5, nothing)
-    insert!(s, 4, nothing)
 
     print(s)
     
-    @assert length(s) == 5
+    @assert length(s) == len
     @assert first(s).first == 1
-    @assert last(s).first == 5
+    @assert last(s).first == len
 
     empty!(s)
     @assert isempty(s)
