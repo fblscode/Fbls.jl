@@ -3,8 +3,6 @@
 
 * add multi range test
 
-* change Void to nothing in Fbls.jl
-
 * add Sortix type
 ** implement in Sortix.jl and include in Fbls.jl
 ** map tuple of keys to recids in smultidict

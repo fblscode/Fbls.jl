@@ -1,8 +1,8 @@
 module Fbls
 
-import Base: AbstractIOBuffer, ==, convert, delete!, done, empty!, eof, get, 
-gethash, index, isempty, haskey, length, next, position, push!, seekend, 
-setindex!, start
+import Base: AbstractIOBuffer, KeyError, ==, convert, delete!, done, empty!, 
+eof, get, gethash, getindex, index, isempty, isless, haskey, length, next, 
+position, push!, seekend, setindex!, show, start
 import Base.Dates: DateTime, datetime2unix, now, unix2datetime
 import Base.Random: UUID, uuid4
 
@@ -15,6 +15,8 @@ typealias Vec{T} Array{T, 1}
 
 abstract Err <: Exception
 type RecNotFound <: Err end
+
+include("Smulti.jl")
 
 TempBuf() = IOBuffer()
 
@@ -551,6 +553,7 @@ prevoffs(tbl::Tbl) = IOTbl(tbl).prevoffs
 dump(tbl::Tbl, out::IOBuf) = for r in tbl writerec(tbl, r, out) end
 
 load!(tbl::Tbl, in::IOBuf) = while !eof(in) load!(tbl, readrec(tbl, in)) end
+include("Sortix.jl")
 
 testTblBasics() = begin
     t = Tbl(:foos)
@@ -818,6 +821,7 @@ testIORevix() = begin
 end
 
 testAll() = begin
+    testSmulti()
     testTblBasics()
     testRecBasics()
     testIOTblBasics()
@@ -837,6 +841,7 @@ testAll() = begin
     testRevix()
     testDumpLoadRevix()
     testIORevix()
+    testSortix()
 end
 
 end

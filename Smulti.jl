@@ -1,8 +1,3 @@
-module Fbls
-
-import Base: KeyError, empty!, getindex, haskey, isempty, isless, length, setindex, 
-show
-
 type SmultiNode{KeyT, ValT}
     down::SmultiNode{KeyT, ValT}
     next::SmultiNode{KeyT, ValT}
@@ -261,6 +256,4 @@ end
 
 testSmulti() = begin
     testSmultiBasics()
-end
-
 end
