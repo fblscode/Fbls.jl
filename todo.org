@@ -2,6 +2,10 @@
 
 * compare hashmap perf to Dict
 
+* change skipmap to skip deterministically in findnode
+** keep track of steps & pn
+** insert new up node in chain and link to pn if steps / maxsteps
+
 * implement remento in example2
 
 * post maps
