@@ -8,6 +8,7 @@ type SmultiNode{KeyT, ValT}
     next::SmultiNode{KeyT, ValT}
     kv::Any
     prev::SmultiNode{KeyT, ValT}
+    up::SmultiNode{KeyT, ValT}
 
     SmultiNode() = begin
         n = new()
@@ -15,6 +16,7 @@ type SmultiNode{KeyT, ValT}
         n.prev = n
         n.next = n
         n.down = n
+        n.up = n
         return n
     end
     
@@ -23,7 +25,10 @@ type SmultiNode{KeyT, ValT}
         n.kv = Pair{KeyT, ValT}(key, val)
         n.prev = prev
         n.next = prev.next
+        n.prev.next = n
+        n.next.prev = n
         n.down = n
+        n.up = n
         return n
     end
 end
@@ -41,7 +46,8 @@ type Smulti{KeyT, ValT}
         s.prob = 1 // levels
 
         for i in 1:levels-1
-            n.down = SmultiNode{KeyT, ValT}() 
+            n.down = SmultiNode{KeyT, ValT}()
+            n.down.up = n
             n = n.down
         end
 
@@ -78,66 +84,56 @@ findnode{KeyT, ValT}(s::Smulti{KeyT, ValT}, key::KeyT) = begin
 
         while n.kv != nothing && isless(n.kv.first, key) n = n.next end
 
-        if n.kv != nothing && n.kv.first == key return n => depth end
+        if n.kv != nothing && n.kv.first == key return n => 0 end
 
         if n.prev.down == n.prev break end
+      
         n = n.prev.down
         depth += 1
     end
 
-    return nothing
+    return n => depth
 end
 
 getindex{KeyT, ValT}(s::Smulti{KeyT, ValT}, key::KeyT) = begin
     n = findnode(s, key)
-    if n != nothing return n.first.kv.second end
+    if n.second == 0 return n.first.kv.second end
     throw(KeyError(key))
 end
 
 haskey{KeyT, ValT}(s::Smulti{KeyT, ValT}, key::KeyT) =
-    findnode(s, key) != nothing
+    findnode(s, key).second == 0
 
 insert!{KeyT, ValT}(s::Smulti{KeyT, ValT}, key::KeyT, val::ValT; 
                     multi=false, update=false) = begin
-    n = s.top
-    pnn = nothing
-    prob = s.prob
+    n = findnode(s, key)
 
-    while true
-        n = n.next
-
-        while n.kv != nothing && isless(n.kv.first, key) n = n.next end
-
-        if !multi && n.kv != nothing && n.kv.first == key 
-            if update n.kv = Pair{KeyT, ValT}(key, val) end
-            return false 
-        end
-
-        islast = n.prev.down == n.prev
-
-        if islast || rand() < prob
-            nn = SmultiNode{KeyT, ValT}(key, val, n.prev)
-            if pnn != nothing nn.down = pnn end
-            pnn = nn
-        else
-            prob += prob
-        end
-
-        if islast break end
-        n = n.prev.down
-        prob += prob
+    if !multi && n.second == 0
+        if update n.first.kv = Pair{KeyT, ValT}(key, val) end
+        return false 
     end
 
-    nn = pnn
+    depth = n.second
+    prob = 1
+    dprob = prob // (depth + 1)
+    n = n.first.prev
     pnn = nothing
-    while nn != pnn
-        nn.prev.next = nn
-        nn.next.prev = nn
 
-        up = nn.down
-        nn.down = if pnn == nothing nn else pnn end
-        pnn = nn
-        nn = up
+    while true
+        if prob == 1 || rand() < prob
+            nn = SmultiNode{KeyT, ValT}(key, val, n)
+
+            if pnn != nothing 
+                nn.down = pnn
+                nn.down.up = nn
+            end
+
+            pnn = nn
+        end
+
+        if n.up == n break end
+        n = n.up
+        prob -= dprob
     end
 
     s.length += 1
@@ -200,9 +196,10 @@ testSmultiBasics() = begin
     @assert isempty(s)
 
     for v in vs insert!(s, v, v) end
+    
+    print(s)
     @assert !isempty(s)
 
-    print(s)
     
     @assert length(s) == len
     @assert first(s).first == 1
