@@ -3,6 +3,9 @@
 * rename Sortix to Skipix
 
 * add HashMap
+** use Dict{Int64, SkipMap{Key, Val}} as vals
+** add length
+** use Base.hash()
 
 * add Hashix based on HashMap
 
