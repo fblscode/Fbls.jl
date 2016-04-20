@@ -50,5 +50,5 @@ runSkipMap() = begin
     vs = Array(1:skipMapPerfreps)
 
     @timeit runMapPerf(SortedDict(Dict{Int, Int}()), vs)
-    @timeit runMapPerf(SkipMap{Int, Int}(4), vs)
+    @timeit runMapPerf(SkipMap{Int, Int}(70), vs)
 end
