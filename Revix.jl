@@ -58,7 +58,7 @@ length(rx::Revix) = length(BasicRevix(rx).recs)
 next(rx::Revix, i) = next(BasicRevix(rx).recs, i)
 start(rx::Revix) = start(BasicRevix(rx).recs)
 
-dump(rx::Revix, out::IOBuf) = begin
+dump(rx::Revix, out::IO) = begin
     brx = BasicRevix(rx)
 
     for (id, val) in brx.recs
@@ -67,7 +67,7 @@ dump(rx::Revix, out::IOBuf) = begin
     end
 end
 
-load!(rx::Revix, in::IOBuf) = begin
+load!(rx::Revix, in::IO) = begin
     brx = BasicRevix(rx)
 
     while !eof(in)
@@ -84,12 +84,12 @@ end
 
 immutable IORevix{V} <: Revix{V}
     wrapped::Revix{V}
-    buf::IOBuf
+    buf::IO
     
-    IORevix(rx::Revix{V}, buf::IOBuf) = new(rx, buf)
+    IORevix(rx::Revix{V}, buf::IO) = new(rx, buf)
 end
 
-IO{V}(rx::Revix{V}, buf::IOBuf) =
+IO{V}(rx::Revix{V}, buf::IO) =
     IORevix{V}(rx, buf)
 
 convert(::Type{BasicRevix}, rx::IORevix) = BasicRevix(rx.wrapped)

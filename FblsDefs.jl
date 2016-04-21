@@ -1,10 +1,9 @@
-import Base: AbstractIOBuffer, KeyError, ==, convert, delete!, done, empty!, 
+import Base: IO, KeyError, ==, convert, delete!, done, empty!, 
 eof, get, hash, getindex, isempty, isless, haskey, length, next, position, 
 push!, seekend, setindex!, show, start
 import Base.Dates: DateTime, datetime2unix, now, unix2datetime
 import Base.Random: UUID, uuid4
 
-typealias IOBuf AbstractIOBuffer
 typealias Offs Int64
 typealias RecId UUID
 typealias Revision Int64
@@ -149,33 +148,33 @@ typealias RecSize Int16
 typealias ColSize Int8
 typealias ValSize Int64
 
-readsize(in::IOBuf) = read(in, ValSize)
+readsize(in::IO) = read(in, ValSize)
 
-writesize{ValT}(v::ValT, out::IOBuf) = write(out, ValSize(sizeof(v)))
+writesize{ValT}(v::ValT, out::IO) = write(out, ValSize(sizeof(v)))
 
-readstr{LenT}(::Type{LenT}, in::IOBuf) = begin
+readstr{LenT}(::Type{LenT}, in::IO) = begin
     pos = position(in)
     len = read(in, LenT)
 
     return utf8(read(in, UInt8, len))
 end
 
-readval{ValT}(::Type{ValT}, s::ValSize, in::IOBuf) = read(in, ValT) 
+readval{ValT}(::Type{ValT}, s::ValSize, in::IO) = read(in, ValT) 
 
-readval(t::Type{DateTime}, s::ValSize, in::IOBuf) =
+readval(t::Type{DateTime}, s::ValSize, in::IO) =
     unix2datetime(read(in, Float64))
 
-readval(t::Type{Rec}, s::ValSize, in::IOBuf) = readval(RecId, s, in)
+readval(t::Type{Rec}, s::ValSize, in::IO) = readval(RecId, s, in)
 
-readval(t::Type{Str}, s::ValSize, in::IOBuf) = utf8(read(in, UInt8, s))
+readval(t::Type{Str}, s::ValSize, in::IO) = utf8(read(in, UInt8, s))
 
-readval(t::Type{UUID}, s::ValSize, in::IOBuf) = RecId(read(in, UInt128))
+readval(t::Type{UUID}, s::ValSize, in::IO) = RecId(read(in, UInt128))
 
-readval{ValT}(col::Col{ValT}, s::ValSize, in::IOBuf) = readval(ValT, s, in)
+readval{ValT}(col::Col{ValT}, s::ValSize, in::IO) = readval(ValT, s, in)
 
-readval(col::RecCol, s::ValSize, in::IOBuf) = get(col.tbl, readval(Rec, s, in))
+readval(col::RecCol, s::ValSize, in::IO) = get(col.tbl, readval(Rec, s, in))
 
-readrec(tbl::Tbl, in::IOBuf) = begin
+readrec(tbl::Tbl, in::IO) = begin
     len = read(in, RecSize)
     rec = Rec()
     
@@ -195,36 +194,36 @@ readrec(tbl::Tbl, in::IOBuf) = begin
     return rec
 end
 
-writestr{LenT}(::Type{LenT}, val::Str, out::IOBuf) = begin
+writestr{LenT}(::Type{LenT}, val::Str, out::IO) = begin
     bs = bytestring(val)
     len = length(bs)
     write(out, LenT(len))
     write(out, bytestring(val))
 end
 
-writeval(val::DateTime, out::IOBuf) = writeval(datetime2unix(val), out)
+writeval(val::DateTime, out::IO) = writeval(datetime2unix(val), out)
 
-writeval(val::Rec, out::IOBuf) = writeval(val[recid], out)
+writeval(val::Rec, out::IO) = writeval(val[recid], out)
 
-writeval(val::Str, out::IOBuf) = begin
+writeval(val::Str, out::IO) = begin
     writesize(val, out)
     write(out, bytestring(val))
 end
 
-writeval(val::UUID, out::IOBuf) = writeval(val.value, out)
+writeval(val::UUID, out::IO) = writeval(val.value, out)
 
-writeval(val, out::IOBuf) = begin
+writeval(val, out::IO) = begin
     writesize(val, out)
     write(out, val)
 end
 
-writeval{ValT}(col::Col{ValT}, val::ValT, out::IOBuf) = writeval(val, out)
+writeval{ValT}(col::Col{ValT}, val::ValT, out::IO) = writeval(val, out)
 
 recsize(tbl::Tbl, rec::Rec) = 
     RecSize(count((c) -> !istemp(c) && haskey(rec, Fld(c)), cols(tbl)))
 
 
-writerec(tbl::Tbl, rec::Rec, out::IOBuf) = begin
+writerec(tbl::Tbl, rec::Rec, out::IO) = begin
     write(out, recsize(tbl, rec))
 
     for c in cols(tbl)

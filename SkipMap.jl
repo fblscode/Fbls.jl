@@ -61,7 +61,7 @@ delete!{K, V}(s::SkipMap{K, V}, key::K, val::Any = nothing) = begin
     cnt = 0
 
     while true
-        if val == nothing || n.kv.second == val
+        if val == nothing || n.kv.second == val::V
             n.prev.next = n.next
             n.next.prev = n.prev
             cnt += 1
@@ -140,7 +140,7 @@ end
 @inline haskey{K, V}(s::SkipMap{K, V}, key::K) = findnode(s, key).second
 
 insert!{K, V}(s::SkipMap{K, V}, key::K, val::V; 
-              multi=false, update=false) = begin
+              multi::Bool = false, update::Bool = false) = begin
     n = findnode(s, key)
 
     if !multi && n.second 

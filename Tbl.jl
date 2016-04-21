@@ -143,6 +143,6 @@ length(tbl::Tbl) = length(values(BasicTbl(tbl).recs))
 next(tbl::Tbl, i) = next(values(BasicTbl(tbl).recs), i)
 start(tbl::Tbl) = start(values(BasicTbl(tbl).recs))
 
-dump(tbl::Tbl, out::IOBuf) = for r in tbl writerec(tbl, r, out) end
+dump(tbl::Tbl, out::IO) = for r in tbl writerec(tbl, r, out) end
 
-load!(tbl::Tbl, in::IOBuf) = while !eof(in) load!(tbl, readrec(tbl, in)) end
+load!(tbl::Tbl, in::IO) = while !eof(in) load!(tbl, readrec(tbl, in)) end

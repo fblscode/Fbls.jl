@@ -1,10 +1,10 @@
 immutable IOTbl <: Tbl
     wrapped::Tbl
-    buf::IOBuf
+    buf::IO
     offs::Col{Offs}
     prevoffs::Col{Offs}
     
-    IOTbl(tbl::Tbl, buf::IOBuf, offs::Col{Offs}) = begin
+    IOTbl(tbl::Tbl, buf::IO, offs::Col{Offs}) = begin
         t = new(tbl, buf, offs, Col(Offs, symbol("$(defname(tbl))_prevoffs")))
 
         pushcol!(tbl, isdelCol, t.offs, t.prevoffs)
@@ -13,7 +13,7 @@ immutable IOTbl <: Tbl
     end
 end
 
-IO(tbl::Tbl, buf::IOBuf; offs = Col(Offs, symbol("$(defname(tbl))_offs"))) = 
+IO(tbl::Tbl, buf::IO; offs = Col(Offs, symbol("$(defname(tbl))_offs"))) = 
     IOTbl(tbl, buf, offs)
 
 cols(tbl::IOTbl) = cols(tbl.wrapped)

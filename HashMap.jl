@@ -47,7 +47,8 @@ end
     return haskey(s, key)
 end
 
-insert!{K, V}(m::HashMap{K, V}, key::K, val::V; multi=false, update=false) = begin
+insert!{K, V}(m::HashMap{K, V}, key::K, val::V; 
+              multi::Bool = false, update::Bool = false) = begin
     i = getslotindex(m, key)
     s = get(m.slots, i, nothing)
 
