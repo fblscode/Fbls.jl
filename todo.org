@@ -1,7 +1,7 @@
-* change skipmap to skip deterministically in findnode
-** keep track of steps & pn
-** insert new up node in chain and link to pn if steps / maxsteps
-** change insert! to use findnode
+* add start/next/end iter support to SkipMap/HashMap
+
+* implement getindex(SkipMap, range)
+** return iterator (pair(node, end))
 
 * implement remento in example2
 
@@ -12,9 +12,6 @@
 * add Evt name and override show()
 
 * add multi col sortix test
-
-* implement getindex(smulti, range)
-** return iterator (pair(node, end))
 
 * add multi range test
 

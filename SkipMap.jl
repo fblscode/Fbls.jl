@@ -15,9 +15,9 @@ type SkipNode{K, V}
         return n
     end
     
-    SkipNode(key::K, val::V, prev::SkipNode{K, V}) = begin
+    SkipNode(kv::Pair{K, V}, prev::SkipNode{K, V}) = begin
         n = new()
-        n.kv = Pair{K, V}(key, val)
+        n.kv = kv
         n.prev = prev
         n.next = prev.next
         prev.next.prev = n
@@ -102,7 +102,7 @@ findnode{K, V}(s::SkipMap{K, V}, key::K) = begin
 
         while n.kv != nothing && isless(n.kv.first, key) 
             if steps == maxsteps && pn != nothing
-                nn = SkipNode{K, V}(n.kv.first, n.kv.second, pn)
+                nn = SkipNode{K, V}(n.kv, pn)
                 nn.down = n
                 n.up = nn
                 pn = nn
@@ -146,7 +146,7 @@ insert!{K, V}(s::SkipMap{K, V}, key::K, val::V;
         return n.first.kv.second
     end
                   
-    SkipNode{K, V}(key, val, n.first.prev)
+    SkipNode{K, V}(Pair{K, V}(key, val), n.first.prev)
     s.length += 1
     return val
 end
