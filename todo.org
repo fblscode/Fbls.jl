@@ -3,9 +3,12 @@
 * implement getindex(SkipMap, range)
 ** return iterator (pair(node, end))
 
-* implement remento in example2
-
 * post maps
+
+* implement remento in example2
+** common offs index
+** add calendar resource hashix
+** add calendar start skipix
 
 * add Fld name and override show()
 
