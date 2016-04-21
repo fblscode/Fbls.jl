@@ -1,9 +1,7 @@
-typealias SkipKV{K, V} Union{Void, Pair{K, V}}
-
 type SkipNode{K, V}
     down::SkipNode{K, V}
     next::SkipNode{K, V}
-    kv::SkipKV{K, V}
+    kv::Union{Void, Pair{K, V}}
     prev::SkipNode{K, V}
     up::SkipNode{K, V}
 

@@ -13,7 +13,8 @@ immutable IOTbl <: Tbl
     end
 end
 
-IO(tbl::Tbl, buf::IO; offs = Col(Offs, symbol("$(defname(tbl))_offs"))) = 
+IO(tbl::Tbl, buf::IO; offs::Col{Offs} = 
+   Col(Offs, symbol("$(defname(tbl))_offs"))) = 
     IOTbl(tbl, buf, offs)
 
 cols(tbl::IOTbl) = cols(tbl.wrapped)

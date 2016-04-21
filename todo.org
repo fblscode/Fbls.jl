@@ -1,5 +1,3 @@
-* add last fast path to skipmap
-
 * add start/next/end iter support to SkipMap/HashMap
 
 * implement getindex(SkipMap, range)
