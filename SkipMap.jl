@@ -89,7 +89,7 @@ empty!{K, V}(s::SkipMap{K, V}) = begin
     return s
 end
 
-first{K, V}(s::SkipMap{K, V}) = s.bottom.next.kv
+@inline first{K, V}(s::SkipMap{K, V}) = s.bottom.next.kv
 
 findnode{K, V}(s::SkipMap{K, V}, key::K) = begin
     n = s.top
@@ -125,13 +125,13 @@ findnode{K, V}(s::SkipMap{K, V}, key::K) = begin
     return n => false
 end
 
-getindex{K, V}(s::SkipMap{K, V}, key::K) = begin
+@inline getindex{K, V}(s::SkipMap{K, V}, key::K) = begin
     n = findnode(s, key)
     if n.second return n.first.kv.second end
     throw(KeyError(key))
 end
 
-haskey{K, V}(s::SkipMap{K, V}, key::K) = findnode(s, key).second
+@inline haskey{K, V}(s::SkipMap{K, V}, key::K) = findnode(s, key).second
 
 insert!{K, V}(s::SkipMap{K, V}, key::K, val::V; 
               multi=false, update=false) = begin
@@ -151,13 +151,13 @@ insert!{K, V}(s::SkipMap{K, V}, key::K, val::V;
     return val
 end
 
-isempty{K, V}(s::SkipMap{K, V}) = s.length == 0
+@inline isempty{K, V}(s::SkipMap{K, V}) = s.length == 0
 
-last{K, V}(s::SkipMap{K, V}) = s.bottom.prev.kv
+@inline last{K, V}(s::SkipMap{K, V}) = s.bottom.prev.kv
 
-length{K, V}(s::SkipMap{K, V}) = s.length
+@inline length{K, V}(s::SkipMap{K, V}) = s.length
 
-setindex!{K, V}(s::SkipMap{K, V}, val::V, key::K) = 
+@inline setindex!{K, V}(s::SkipMap{K, V}, val::V, key::K) = 
     insert!(s, key, val, update=true)
 
 show{K, V}(io::IO, n::SkipNode{K, V}) = begin

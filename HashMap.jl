@@ -26,12 +26,12 @@ delete!{K, V}(m::HashMap{K, V}, key::K, val = nothing) = begin
     return res
 end
 
-empty!{K, V}(m::HashMap{K, V}) = begin
+@inline empty!{K, V}(m::HashMap{K, V}) = begin
     empty!(m.slots)
     m.length = 0
 end
 
-getslotindex{K, V}(m::HashMap{K, V}, key::K) = hash(key) % m.slotcount
+@inline getslotindex{K, V}(m::HashMap{K, V}, key::K) = hash(key) % m.slotcount
 
 getindex{K, V}(m::HashMap{K, V}, key::K) = begin
     i = getslotindex(m, key)
@@ -61,9 +61,9 @@ insert!{K, V}(m::HashMap{K, V}, key::K, val::V; multi=false, update=false) = beg
     return res
 end
 
-setindex!{K, V}(m::HashMap{K, V}, val::V, key::K) =
+@inline setindex!{K, V}(m::HashMap{K, V}, val::V, key::K) =
     insert!(m, key, val, update=true)
 
-isempty{K, V}(m::HashMap{K, V}) = m.length == 0
+@inline isempty{K, V}(m::HashMap{K, V}) = m.length == 0
 
-length{K, V}(m::HashMap{K, V}) = m.length
+@inline length{K, V}(m::HashMap{K, V}) = m.length
