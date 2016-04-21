@@ -92,6 +92,10 @@ end
 @inline first{K, V}(s::SkipMap{K, V}) = s.bottom.next.kv
 
 findnode{K, V}(s::SkipMap{K, V}, key::K) = begin
+    if s.bottom.prev != s.bottom && isless(s.bottom.prev.kv.first, key)
+        return s.bottom => false
+    end
+
     n = s.top
     maxsteps = 1
     steps = 1

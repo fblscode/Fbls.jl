@@ -33,14 +33,14 @@ end
 
 @inline getslotindex{K, V}(m::HashMap{K, V}, key::K) = hash(key) % m.slotcount
 
-getindex{K, V}(m::HashMap{K, V}, key::K) = begin
+@inline getindex{K, V}(m::HashMap{K, V}, key::K) = begin
     i = getslotindex(m, key)
     s = get(m.slots, i, nothing)
     if s == nothing throw(KeyError(key)) end
     return s[key]
 end
 
-haskey{K, V}(m::HashMap{K, V}, key::K) = begin
+@inline haskey{K, V}(m::HashMap{K, V}, key::K) = begin
     i = getslotindex(m, key)
     s = get(m.slots, i, nothing)
     if s == nothing return false end
