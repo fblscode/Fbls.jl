@@ -54,5 +54,5 @@ runSkipMap() = begin
     randArray!(vs)
 
     @timeit runMapPerf(SortedDict(Dict{Int, Int}()), vs)
-    @timeit runMapPerf(SkipMap{Int, Int}(8), vs)
+    @timeit runMapPerf(SkipMap{Int, Int}(10), vs)
 end
