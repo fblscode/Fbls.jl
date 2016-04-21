@@ -17,6 +17,8 @@ runSkipMapBasics() = begin
     for v in vs insert!(s, v, v) end
     @assert !isempty(s)
 
+    println(s)
+
     @assert length(s) == len
     @assert first(s).first == 1
     @assert last(s).first == len
@@ -52,5 +54,5 @@ runSkipMap() = begin
     randArray!(vs)
 
     @timeit runMapPerf(SortedDict(Dict{Int, Int}()), vs)
-    @timeit runMapPerf(SkipMap{Int, Int}(70), vs)
+    @timeit runMapPerf(SkipMap{Int, Int}(8), vs)
 end

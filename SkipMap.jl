@@ -20,6 +20,8 @@ type SkipNode{K, V}
         n.kv = Pair{K, V}(key, val)
         n.prev = prev
         n.next = prev.next
+        prev.next.prev = n
+        prev.next = n
         n.down = n
         n.up = n
         return n
@@ -52,11 +54,11 @@ end
 
 delete!{K, V}(s::SkipMap{K, V}, key::K, val = nothing) = begin
     n = findnode(s, key)
-    if n == nothing return 0 end
-
+    if !n.second return 0 end
+    n = n.first
     cnt = 0
 
-    while n.kv != nothing && n.kv.first == key
+    while true
         if val == nothing || n.kv.second == val
             n.prev.next = n.next
             n.next.prev = n.prev
@@ -64,6 +66,7 @@ delete!{K, V}(s::SkipMap{K, V}, key::K, val = nothing) = begin
         end
         
         n = n.next
+        if n.kv == nothing || n.kv.first != key break end
     end
 
     s.length -= cnt
@@ -90,7 +93,7 @@ first{K, V}(s::SkipMap{K, V}) = s.bottom.next.kv
 
 findnode{K, V}(s::SkipMap{K, V}, key::K) = begin
     n = s.top
-    maxsteps = 2 << (max(2, s.levels) - 2)
+    maxsteps = 1
     steps = 1
     pn = nothing
     
@@ -101,9 +104,8 @@ findnode{K, V}(s::SkipMap{K, V}, key::K) = begin
             if steps == maxsteps && pn != nothing
                 nn = SkipNode{K, V}(n.kv.first, n.kv.second, pn)
                 nn.down = n
-                nn.up = n.up
-                nn.up.down = nn
                 n.up = nn
+                pn = nn
                 steps = 0
             end
 
@@ -111,72 +113,40 @@ findnode{K, V}(s::SkipMap{K, V}, key::K) = begin
             steps += 1
         end
 
-        if n.kv != nothing && n.kv.first == key return n end
+        if n.kv != nothing && n.kv.first == key return n => true end
 
         if n.prev.down == n.prev break end
-        pn = n
+        pn = n.prev
         n = n.prev.down
         steps = 1
-        maxsteps /= 2
+        maxsteps += 1
     end
 
-    return nothing
+    return n => false
 end
 
 getindex{K, V}(s::SkipMap{K, V}, key::K) = begin
     n = findnode(s, key)
-    if n != nothing return n.kv.second end
+    if n.second return n.first.kv.second end
     throw(KeyError(key))
 end
 
-haskey{K, V}(s::SkipMap{K, V}, key::K) = findnode(s, key) != nothing
+haskey{K, V}(s::SkipMap{K, V}, key::K) = findnode(s, key).second
 
 insert!{K, V}(s::SkipMap{K, V}, key::K, val::V; 
               multi=false, update=false) = begin
-    n = s.top
-    pnn = nothing
-    dprob = 1 // s.levels
-    prob = dprob
+    n = findnode(s, key)
 
-    while true
-        n = n.next
-
-        while n.kv != nothing && isless(n.kv.first, key) n = n.next end
-
-        if !multi && n.kv != nothing && n.kv.first == key 
-            if update 
-                n.kv = Pair{K, V}(key, val) 
-                return nothing
-            end
-
-            return n.kv.second
+    if !multi && n.second 
+        if update 
+            n.first.kv = key => val 
+            return nothing
         end
-
-        islast = n.prev.down == n.prev
-
-        if islast || rand() < prob
-            nn = SkipNode{K, V}(key, val, n.prev)
-            if pnn != nothing nn.up = pnn end
-            pnn = nn
-        else
-            prob += dprob
-        end
-
-        if islast break end
-        n = n.prev.down
-        prob += dprob
+        
+        return n.first.kv.second
     end
-
-    nn = pnn
-    while true
-        nn.prev.next = nn
-        nn.next.prev = nn
-
-        if nn.up == nn break end
-        nn.up.down = nn
-        nn = nn.up
-    end
-
+                  
+    SkipNode{K, V}(key, val, n.first.prev)
     s.length += 1
     return val
 end

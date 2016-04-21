@@ -52,6 +52,6 @@ runHashMap() = begin
     vs = Array(1:hashMapPerfreps)
     randArray!(vs)
 
-    @timeit runMapPerf(Dict{Int, Int}(), vs)
-    @timeit runMapPerf(HashMap{Int, Int}(8000, 1), vs)
+    #@timeit runMapPerf(Dict{Int, Int}(), vs)
+    #@timeit runMapPerf(HashMap{Int, Int}(8000, 1), vs)
 end
