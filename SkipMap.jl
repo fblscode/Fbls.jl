@@ -115,9 +115,9 @@ findnode{K, V}(s::SkipMap{K, V}, key::K) = begin
 
         if n.kv != nothing && n.kv.first == key return n => true end
 
-        if n.prev.down == n.prev break end
         pn = n.prev
-        n = n.prev.down
+        if pn.down == pn break end
+        n = pn.down
         steps = 1
         maxsteps += 1
     end

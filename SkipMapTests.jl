@@ -43,7 +43,7 @@ runSkipMapBasics() = begin
     @assert length(s) == 0
 end
 
-skipMapPerfreps = 2000
+skipMapPerfreps = 5000
 
 import DataStructures: SortedDict
 
