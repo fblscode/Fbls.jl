@@ -17,7 +17,7 @@ type HashMap{K, V} <: Map{K, V}
     end
 end
 
-delete!{K, V}(m::HashMap{K, V}, key::K, val::Any = nothing) = begin
+delete!{K, V}(m::HashMap{K, V}, key::K, val::Nullable{V} = Nullable{V}()) = begin
     i = getslotindex(m, key)
     s = get(m.slots, i, nothing)
     if s == nothing return 0 end
@@ -25,6 +25,9 @@ delete!{K, V}(m::HashMap{K, V}, key::K, val::Any = nothing) = begin
     m.length -= res
     return res
 end
+
+@inline delete!{K, V}(m::HashMap{K, V}, key::K, val::V) = 
+    delete!(m, key, Nullable{V}(val))
 
 @inline empty!{K, V}(m::HashMap{K, V}) = begin
     empty!(m.slots)

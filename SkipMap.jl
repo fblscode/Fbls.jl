@@ -1,13 +1,13 @@
 type SkipNode{K, V}
     down::SkipNode{K, V}
     next::SkipNode{K, V}
-    kv::Union{Void, Pair{K, V}}
+    kv::Nullable{Pair{K, V}}
     prev::SkipNode{K, V}
     up::SkipNode{K, V}
 
     SkipNode() = begin
         n = new()
-        n.kv = nothing
+        n.kv = Nullable{Pair{K, V}}()
         n.prev = n
         n.next = n
         n.down = n
@@ -17,7 +17,7 @@ type SkipNode{K, V}
     
     SkipNode(kv::Pair{K, V}, prev::SkipNode{K, V}) = begin
         n = new()
-        n.kv = kv
+        n.kv = Nullable{Pair{K, V}}(kv)
         n.prev = prev
         n.next = prev.next
         prev.next.prev = n
@@ -52,26 +52,30 @@ type SkipMap{K, V} <: Map{K, V}
     end
 end
 
-delete!{K, V}(s::SkipMap{K, V}, key::K, val::Any = nothing) = begin
+delete!{K, V}(s::SkipMap{K, V}, 
+              key::K, val::Nullable{V} = Nullable{V}()) = begin
     n = findnode(s, key)
     if !n.second return 0 end
     n = n.first
     cnt = 0
 
     while true
-        if val == nothing || n.kv.second == val::V
+        if isnull(val) || get(n.kv).second == get(val)
             n.prev.next = n.next
             n.next.prev = n.prev
             cnt += 1
         end
         
         n = n.next
-        if n.kv == nothing || n.kv.first != key break end
+        if isnull(n.kv) || get(n.kv).first != key break end
     end
 
     s.length -= cnt
     return cnt
 end
+
+@inline delete!{K, V}(s::SkipMap{K, V}, key::K, val::V) = 
+    delete!(s, key, Nullable{V}(val))
 
 empty!{K, V}(s::SkipMap{K, V}) = begin
     n = s.top
@@ -89,10 +93,10 @@ empty!{K, V}(s::SkipMap{K, V}) = begin
     return s
 end
 
-@inline first{K, V}(s::SkipMap{K, V}) = s.bottom.next.kv
+@inline first{K, V}(s::SkipMap{K, V}) = get(s.bottom.next.kv)
 
 findnode{K, V}(s::SkipMap{K, V}, key::K) = begin
-    if s.bottom.prev != s.bottom && isless(s.bottom.prev.kv.first, key)
+    if s.bottom.prev != s.bottom && isless(get(s.bottom.prev.kv).first, key)
         return s.bottom => false
     end
 
@@ -104,9 +108,9 @@ findnode{K, V}(s::SkipMap{K, V}, key::K) = begin
     while true
         n = n.next
 
-        while n.kv != nothing && isless(n.kv.first, key) 
+        while !isnull(n.kv) && isless(get(n.kv).first, key) 
             if steps == maxsteps && pn != nothing
-                nn = SkipNode{K, V}(n.kv, pn)
+                nn = SkipNode{K, V}(get(n.kv), pn)
                 nn.down = n
                 n.up = nn
                 pn = nn
@@ -117,7 +121,7 @@ findnode{K, V}(s::SkipMap{K, V}, key::K) = begin
             steps += 1
         end
 
-        if n.kv != nothing && n.kv.first == key return n => true end
+        if !isnull(n.kv) && get(n.kv).first == key return n => true end
 
         pn = n.prev
         if pn.down == pn break end
@@ -131,7 +135,7 @@ end
 
 @inline getindex{K, V}(s::SkipMap{K, V}, key::K) = begin
     n = findnode(s, key)
-    if n.second return n.first.kv.second end
+    if n.second return get(n.first.kv).second end
     throw(KeyError(key))
 end
 
@@ -143,11 +147,11 @@ insert!{K, V}(s::SkipMap{K, V}, key::K, val::V;
 
     if !multi && n.second 
         if update 
-            n.first.kv = key => val 
+            n.first.kv = Nullable{Pair{K, V}}(key => val)
             return nothing
         end
         
-        return n.first.kv.second
+        return get(n.first.kv).second
     end
                   
     SkipNode{K, V}(Pair{K, V}(key, val), n.first.prev)
@@ -157,7 +161,7 @@ end
 
 @inline isempty{K, V}(s::SkipMap{K, V}) = s.length == 0
 
-@inline last{K, V}(s::SkipMap{K, V}) = s.bottom.prev.kv
+@inline last{K, V}(s::SkipMap{K, V}) = get(s.bottom.prev.kv)
 
 @inline length{K, V}(s::SkipMap{K, V}) = s.length
 
@@ -169,9 +173,9 @@ show{K, V}(io::IO, n::SkipNode{K, V}) = begin
     n = n.next
     sep = ""
 
-    while n.kv != nothing
-        print(io, sep, n.kv.first)
-        if n.kv.second != nothing print(io, ":", n.kv.second) end
+    while !isnull(n.kv)
+        print(io, sep, get(n.kv).first)
+        if get(n.kv).second != nothing print(io, ":", get(n.kv).second) end
         sep = ", "
         n = n.next
     end
