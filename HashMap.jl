@@ -17,7 +17,7 @@ type HashMap{K, V} <: Map{K, V}
     end
 end
 
-delete!{K, V}(m::HashMap{K, V}, key::K, val = nothing) = begin
+delete!{K, V}(m::HashMap{K, V}, key::K, val::Any = nothing) = begin
     i = getslotindex(m, key)
     s = get(m.slots, i, nothing)
     if s == nothing return 0 end

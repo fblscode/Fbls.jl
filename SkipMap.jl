@@ -1,7 +1,9 @@
+typealias SkipKV{K, V} Union{Void, Pair{K, V}}
+
 type SkipNode{K, V}
     down::SkipNode{K, V}
     next::SkipNode{K, V}
-    kv::Any
+    kv::SkipKV{K, V}
     prev::SkipNode{K, V}
     up::SkipNode{K, V}
 
@@ -52,7 +54,7 @@ type SkipMap{K, V} <: Map{K, V}
     end
 end
 
-delete!{K, V}(s::SkipMap{K, V}, key::K, val = nothing) = begin
+delete!{K, V}(s::SkipMap{K, V}, key::K, val::Any = nothing) = begin
     n = findnode(s, key)
     if !n.second return 0 end
     n = n.first
